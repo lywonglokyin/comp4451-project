@@ -1,0 +1,1 @@
+Run `tsc` or `nodemon`, then open a live server.
