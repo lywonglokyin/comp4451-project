@@ -1,5 +1,5 @@
 {
     "ignore": ["*.js", "fixtures/*"],
     "exec": "tsc || exit 1",
-    "ext": "ts"
+    "ext": "ts, html"
 }
