@@ -4,10 +4,10 @@ import { Texture } from 'pixi.js';
 declare var PIXI: typeof pixi_namespace;
 
 export class MovableSprite extends PIXI.Sprite{
-    turningSpeed: number = 0.1;
+    turningSpeed: number = 0.03;
     speed: number = 0;
     maxSpeed: number = 5;
-    accel: number = 0.01;
+    accel: number = 0.03;
     decel: number = 0.05;
 
     constructor(texture?: Texture){
@@ -16,18 +16,21 @@ export class MovableSprite extends PIXI.Sprite{
 
     public turnLeft: ()=>void = ()=>{
         this.rotation -= this.turningSpeed;
-        if (this.speed > this.maxSpeed*0.6){
-            this.speed*= 0.95;
+        if (this.speed > this.maxSpeed*0.4){
+            this.speed*= 0.99;
         }
     };
     public turnRight: ()=>void = ()=>{
         this.rotation += this.turningSpeed;
-        if (this.speed > this.maxSpeed*0.6){
-            this.speed*= 0.95;
+        if (this.speed > this.maxSpeed*0.4){
+            this.speed*= 0.99;
         }
     }
 
-    public move: ()=>void = ()=>{
+    move(){
+        if (this.speed < 0.3){
+            return;
+        }
         this.x += Math.sin(this.rotation) * Math.max(0, this.speed-0.3);
         this.y -= Math.cos(this.rotation) * Math.max(0, this.speed-0.3);
     }
