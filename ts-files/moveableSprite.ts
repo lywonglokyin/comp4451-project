@@ -39,6 +39,10 @@ export class MovableSprite extends PIXI.Sprite {
         this.y -= Math.cos(this.rotation) * Math.max(0, this.speed-0.3);
     }
 
+    act() {
+        this.move();
+    }
+
     public incSpeed: ()=>void = ()=>{
         this.speed += this.accel;
         if (this.speed > this.maxSpeed) {

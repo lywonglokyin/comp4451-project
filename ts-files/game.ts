@@ -1,163 +1,122 @@
 import * as pixiNamespace from 'pixi.js';
-import {Application, Container, Point, TilingSprite} from 'pixi.js';
-import {MovableSprite} from './moveableSprite.js';
+import {Application, Container, Point, Sprite, Ticker, TilingSprite} from 'pixi.js';
 import {CommandableSprite} from './commandableSprite.js';
-import {KeyboardListener} from './keyboard_listener.js';
+import {Interaction} from './interactive.js';
+import {MovableSprite} from './moveableSprite.js';
+import {Cavalry} from './units/cavalry.js';
+import {Commander} from './units/commander.js';
+import {Infantry} from './units/infantry.js';
+import {UnitTypes} from './units/unitTypes.js';
 
 declare let PIXI: typeof pixiNamespace;
 
-const app: Application = new PIXI.Application({
-    transparent: false,
-    width: window.innerWidth,
-    height: window.innerHeight,
-});
-document.body.appendChild(app.view);
-app.view.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-});
+export class Game {
+    private state: string = 'play';
+    private gameContainer: Container = new PIXI.Container();
 
-const gameState: string = 'play';
+    private playerOneUnits: MovableSprite[] = [];
+    private playerTwoUnits: MovableSprite[] = [];
 
-const gameContainer: Container = new PIXI.Container();
-gameContainer.position.x = app.renderer.width/2;
-gameContainer.position.y = app.renderer.height/2;
+    private cameraFocus: Sprite|null = null;
 
-const mapSprite: TilingSprite = new PIXI.TilingSprite(PIXI.Texture.from('images/tiles.png'), 3000, 6000);
-mapSprite.anchor.set(0.5);
-gameContainer.addChild(mapSprite);
+    private interaction: Interaction; // Handles I/O.
 
-const commander: MovableSprite = new MovableSprite(0.03, 5, 0.03, 0.05, PIXI.Texture.from('images/testunit.png'));
-commander.anchor.set(0.5);
+    private selectedSprite: CommandableSprite|null = null;
 
-gameContainer.pivot.x = commander.x;
-gameContainer.pivot.y = commander.y;
+    readonly mapTileAsset: string = 'images/tiles.png'
 
-commander.x = 100;
-commander.y = 100;
+    constructor(width: number, height: number, app: Application) {
+        const mapSprite: TilingSprite = new PIXI.TilingSprite(PIXI.Texture.from(this.mapTileAsset), width, height);
+        mapSprite.anchor.set(0.5);
+        this.gameContainer.addChild(mapSprite);
+        this.interaction = new Interaction(this, app);
+    }
 
-
-const downKeyListener = new KeyboardListener('ArrowDown');
-downKeyListener.pressed = (()=>{
-    app.ticker.add(commander.decSpeed);
-});
-downKeyListener.released = (()=>{
-    app.ticker.remove(commander.decSpeed);
-});
-const upKeyListener = new KeyboardListener('ArrowUp');
-upKeyListener.pressed = (()=>{
-    app.ticker.add(commander.incSpeed);
-});
-upKeyListener.released = (()=>{
-    app.ticker.remove(commander.incSpeed);
-});
-const leftKeyListener = new KeyboardListener('ArrowLeft');
-leftKeyListener.pressed = (()=>{
-    app.ticker.add(commander.turnLeft);
-});
-leftKeyListener.released = (()=>{
-    app.ticker.remove(commander.turnLeft);
-});
-const rightKeyListener = new KeyboardListener('ArrowRight');
-rightKeyListener.pressed = (()=>{
-    app.ticker.add(commander.turnRight);
-});
-rightKeyListener.released = (()=>{
-    app.ticker.remove(commander.turnRight);
-});
-
-
-gameContainer.addChild(commander);
-app.stage.addChild(gameContainer);
-
-
-let selectedSprite: CommandableSprite|null = null;
-
-
-const noOfUnits = 7;
-const units: CommandableSprite[] = [];
-for (let i = 0; i < noOfUnits; i++) {
-    const unit: CommandableSprite = new CommandableSprite(
-        0.03, 5, 0.03, 0.05,
-        PIXI.Texture.from('images/testunit2.png'));
-    unit.anchor.set(0.5);
-    unit.x = 100 + i*100;
-    unit.y = 200;
-    unit.interactive = true;
-    unit.on('mousedown', (e: PointerEvent)=>{
-        console.log('clicked.');
-        if (selectedSprite !== null) {
-            selectedSprite.tint = 0xFFFFFF;
+    public addUnit(x: number, y: number,
+        unitType: UnitTypes, commandable:boolean = true, player: number = 0): CommandableSprite {
+        const localPos = this.gameContainer.toLocal(new PIXI.Point(x, y));
+        let unit: CommandableSprite;
+        if (unitType == UnitTypes.Commander) {
+            unit = new Commander(localPos.x, localPos.y);
+        } else if (unitType == UnitTypes.Infantry) {
+            unit = new Infantry(localPos.x, localPos.y);
+        } else if (unitType == UnitTypes.Cavalry) {
+            unit = new Cavalry(localPos.x, localPos.y);
+        } else {
+            throw new Error('Unexpected unit type!');
         }
-        const targetSprite = e.target! as unknown as CommandableSprite;
-        targetSprite.tint = 0xFF5555;
-        selectedSprite = targetSprite;
-    });
-    units.push(unit);
-    gameContainer.addChild(unit);
-}
 
-const cavUnit: CommandableSprite = new CommandableSprite(0.02, 8, 0.1, 0.08, PIXI.Texture.from('images/testunit3.png'));
-cavUnit.anchor.set(0.5);
-cavUnit.x = 200;
-cavUnit.y = 300;
-cavUnit.interactive = true;
-cavUnit.on('mousedown', (e: PointerEvent)=>{
-    console.log('clicked.');
-    if (selectedSprite !== null) {
-        selectedSprite.tint = 0xFFFFFF;
+        if (commandable) {
+            unit.interactive = true;
+            this.interaction.bindCommandable(unit);
+        }
+
+        this.gameContainer.addChild(unit);
+        if (player==0) {
+            this.playerOneUnits.push(unit);
+        } else {
+            this.playerTwoUnits.push(unit);
+        }
+        return unit;
     }
-    const targetSprite = e.target! as unknown as CommandableSprite;
-    targetSprite.tint = 0xFF5555;
-    selectedSprite = targetSprite;
-});
-gameContainer.addChild(cavUnit);
 
-app.view.addEventListener('contextmenu', (e: MouseEvent) => {
-    if (selectedSprite !== null) {
-        const targetX: number = e.clientX;
-        const targetY: number = e.clientY;
-
-        const localClickPos: Point = new PIXI.Point(targetX, targetY);
-        const localPos: Point = gameContainer.toLocal(localClickPos);
-
-        selectedSprite.targetX = localPos.x;
-        selectedSprite.targetY = localPos.y;
-        selectedSprite.hasTarget = true;
+    public setSelectedSprite(sprite: CommandableSprite): void {
+        if (this.selectedSprite !== null) {
+            this.selectedSprite.tint = 0xFFFFFF;
+        }
+        this.selectedSprite = sprite;
+        this.selectedSprite.tint = 0xFF5555;
     }
-});
 
-/**
- * Camera scrolling logic.
- */
-app.view.addEventListener('wheel', (e: WheelEvent)=>{
-    const isScrollUp: boolean = e.deltaY < 0;
-    if (isScrollUp) {
-        gameContainer.scale.x *= 1.05;
-        gameContainer.scale.y *= 1.05;
-    } else {
-        gameContainer.scale.x *= 0.95;
-        gameContainer.scale.y *= 0.95;
+    public setSelectedSpriteTarget(x: number, y: number) {
+        if (this.selectedSprite == null) {
+            return;
+        }
+        const localClickPos: Point = new PIXI.Point(x, y);
+        const localPos: Point = this.gameContainer.toLocal(localClickPos);
+        this.selectedSprite.targetX = localPos.x;
+        this.selectedSprite.targetY = localPos.y;
+        this.selectedSprite.hasTarget = true;
     }
-});
 
-
-app.ticker.add(()=>{
-    gameLoop();
-});
-
-
-function gameLoop() {
-    if (gameState === 'play') {
-        playFrame();
+    public showGame(app: Application) {
+        app.stage.addChild(this.gameContainer);
+        this.gameContainer.position.x = app.renderer.width/2;
+        this.gameContainer.position.y = app.renderer.height/2;
     }
-}
 
-function playFrame() {
-    commander.move();
-    units.forEach((unit: CommandableSprite)=>{
-        unit.move();
-    });
-    cavUnit.move();
-    gameContainer.pivot.x = commander.x;
-    gameContainer.pivot.y = commander.y;
+    public attachGameLoop(ticker: Ticker) {
+        ticker.add(this.gameLoop);
+    }
+
+    public fixCamera(sprite: Sprite) {
+        this.cameraFocus = sprite;
+    }
+
+    public zoomIn() {
+        this.gameContainer.scale.x *= 1.05;
+        this.gameContainer.scale.y *= 1.05;
+    }
+
+    public zoomOut() {
+        this.gameContainer.scale.x *= 0.99;
+        this.gameContainer.scale.y *= 0.99;
+    }
+
+    private gameLoop = ()=> {
+        if (this.cameraFocus !== null) {
+            this.gameContainer.pivot.x = this.cameraFocus.x;
+            this.gameContainer.pivot.y = this.cameraFocus.y;
+        }
+        this.playerOneUnits.forEach((unit)=>{
+            unit.act();
+        });
+        this.playerTwoUnits.forEach((unit)=>{
+            unit.act();
+        });
+    }
+
+    public getInteractionObject(): Interaction {
+        return this.interaction;
+    }
 }
