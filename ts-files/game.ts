@@ -1,5 +1,5 @@
 import * as pixiNamespace from 'pixi.js';
-import {Application, Container, Point, Renderer, TilingSprite} from 'pixi.js';
+import {Application, Container, Point, TilingSprite} from 'pixi.js';
 import {MovableSprite} from './moveableSprite.js';
 import {CommandableSprite} from './commandableSprite.js';
 import {KeyboardListener} from './keyboard_listener.js';
@@ -23,6 +23,7 @@ gameContainer.position.x = app.renderer.width/2;
 gameContainer.position.y = app.renderer.height/2;
 
 const mapSprite: TilingSprite = new PIXI.TilingSprite(PIXI.Texture.from('images/tiles.png'), 3000, 6000);
+mapSprite.anchor.set(0.5);
 gameContainer.addChild(mapSprite);
 
 const commander: MovableSprite = new MovableSprite(0.03, 5, 0.03, 0.05, PIXI.Texture.from('images/testunit.png'));
