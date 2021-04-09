@@ -1,5 +1,5 @@
 import * as pixiNamespace from 'pixi.js';
-import {Application} from 'pixi.js';
+import {Application, Container, Point, Renderer, TilingSprite} from 'pixi.js';
 import {MovableSprite} from './moveableSprite.js';
 import {CommandableSprite} from './commandableSprite.js';
 import {KeyboardListener} from './keyboard_listener.js';
@@ -18,8 +18,18 @@ app.view.addEventListener('contextmenu', (e) => {
 
 const gameState: string = 'play';
 
+const gameContainer: Container = new PIXI.Container();
+gameContainer.position.x = app.renderer.width/2;
+gameContainer.position.y = app.renderer.height/2;
+
+const mapSprite: TilingSprite = new PIXI.TilingSprite(PIXI.Texture.from('images/tiles.png'), 3000, 6000);
+gameContainer.addChild(mapSprite);
+
 const commander: MovableSprite = new MovableSprite(0.03, 5, 0.03, 0.05, PIXI.Texture.from('images/testunit.png'));
 commander.anchor.set(0.5);
+
+gameContainer.pivot.x = commander.x;
+gameContainer.pivot.y = commander.y;
 
 commander.x = 100;
 commander.y = 100;
@@ -54,7 +64,9 @@ rightKeyListener.released = (()=>{
     app.ticker.remove(commander.turnRight);
 });
 
-app.stage.addChild(commander);
+
+gameContainer.addChild(commander);
+app.stage.addChild(gameContainer);
 
 
 let selectedSprite: CommandableSprite|null = null;
@@ -80,7 +92,7 @@ for (let i = 0; i < noOfUnits; i++) {
         selectedSprite = targetSprite;
     });
     units.push(unit);
-    app.stage.addChild(unit);
+    gameContainer.addChild(unit);
 }
 
 const cavUnit: CommandableSprite = new CommandableSprite(0.02, 8, 0.1, 0.08, PIXI.Texture.from('images/testunit3.png'));
@@ -97,21 +109,25 @@ cavUnit.on('mousedown', (e: PointerEvent)=>{
     targetSprite.tint = 0xFF5555;
     selectedSprite = targetSprite;
 });
-app.stage.addChild(cavUnit);
+gameContainer.addChild(cavUnit);
 
 app.view.addEventListener('contextmenu', (e: MouseEvent) => {
     const targetX: number = e.clientX;
     const targetY: number = e.clientY;
-    selectedSprite!.targetX = targetX;
-    selectedSprite!.targetY = targetY;
+
+    const localClickPos: Point = new PIXI.Point(targetX, targetY);
+    const localPos: Point = gameContainer.toLocal(localClickPos);
+
+    selectedSprite!.targetX = localPos.x;
+    selectedSprite!.targetY = localPos.y;
     selectedSprite!.hasTarget = true;
-    console.log(selectedSprite!.directionToTarget());
 });
 
 
 app.ticker.add(()=>{
     gameLoop();
 });
+
 
 function gameLoop() {
     if (gameState === 'play') {
@@ -125,4 +141,6 @@ function playFrame() {
         unit.move();
     });
     cavUnit.move();
+    gameContainer.pivot.x = commander.x;
+    gameContainer.pivot.y = commander.y;
 }
