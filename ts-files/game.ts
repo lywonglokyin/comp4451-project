@@ -2,7 +2,6 @@ import * as pixiNamespace from 'pixi.js';
 import {Application, Container, Point, Sprite, Ticker, TilingSprite} from 'pixi.js';
 import {CommandableSprite} from './commandableSprite.js';
 import {Interaction} from './interactive.js';
-import {MovableSprite} from './moveableSprite.js';
 import {Cavalry} from './units/cavalry.js';
 import {Commander} from './units/commander.js';
 import {Infantry} from './units/infantry.js';
@@ -14,8 +13,14 @@ export class Game {
     private state: string = 'play';
     private gameContainer: Container = new PIXI.Container();
 
-    private playerOneUnits: MovableSprite[] = [];
-    private playerTwoUnits: MovableSprite[] = [];
+    private gameLeftBound: number;
+    private gameUpBound: number;
+    private gameRightBound: number;
+    private gameDownBound: number;
+    private readonly gameBoundPadding: number = 40;
+
+    private playerOneUnits: CommandableSprite[] = [];
+    private playerTwoUnits: CommandableSprite[] = [];
 
     private cameraFocus: Sprite|null = null;
 
@@ -27,9 +32,13 @@ export class Game {
 
     constructor(width: number, height: number, app: Application) {
         const mapSprite: TilingSprite = new PIXI.TilingSprite(PIXI.Texture.from(this.mapTileAsset), width, height);
-        mapSprite.anchor.set(0.5);
         this.gameContainer.addChild(mapSprite);
         this.interaction = new Interaction(this, app);
+
+        this.gameLeftBound = this.gameBoundPadding;
+        this.gameUpBound = this.gameBoundPadding;
+        this.gameRightBound = width - this.gameBoundPadding;
+        this.gameDownBound = height - this.gameBoundPadding;
     }
 
     public addUnit(x: number, y: number,
@@ -79,6 +88,23 @@ export class Game {
         this.selectedSprite.hasTarget = true;
     }
 
+    private checkBoundAndEnforce(unit: CommandableSprite) {
+        if (unit.x < this.gameLeftBound) {
+            unit.speed = 0;
+            unit.x = this.gameLeftBound;
+        } else if (unit.x > this.gameRightBound) {
+            unit.speed = 0;
+            unit.x = this.gameRightBound;
+        }
+        if (unit.y < this.gameUpBound) {
+            unit.speed = 0;
+            unit.y = this.gameUpBound;
+        } else if (unit.y > this.gameDownBound) {
+            unit.speed = 0;
+            unit.y = this.gameDownBound;
+        }
+    }
+
     public showGame(app: Application) {
         app.stage.addChild(this.gameContainer);
         this.gameContainer.position.x = app.renderer.width/2;
@@ -110,9 +136,11 @@ export class Game {
         }
         this.playerOneUnits.forEach((unit)=>{
             unit.act();
+            this.checkBoundAndEnforce(unit);
         });
         this.playerTwoUnits.forEach((unit)=>{
             unit.act();
+            this.checkBoundAndEnforce(unit);
         });
     }
 
