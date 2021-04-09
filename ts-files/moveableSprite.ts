@@ -4,14 +4,18 @@ import {Texture} from 'pixi.js';
 declare let PIXI: typeof pixiNamespace;
 
 export class MovableSprite extends PIXI.Sprite {
-    turningSpeed: number = 0.03;
+    turningSpeed: number;
     speed: number = 0;
-    maxSpeed: number = 5;
-    accel: number = 0.03;
-    decel: number = 0.05;
+    maxSpeed: number;
+    accel: number;
+    decel: number;
 
-    constructor(texture?: Texture) {
+    constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number, texture?: Texture) {
         super(texture);
+        this.turningSpeed = turningSpeed;
+        this.maxSpeed = maxSpeed;
+        this.accel = accel;
+        this.decel = decel;
     }
 
     public turnLeft: ()=>void = ()=>{

@@ -8,8 +8,8 @@ export class CommandableSprite extends MovableSprite {
     targetY: number = 0;
     safeDistance: number; // The distance from which the object need to decel
 
-    constructor(texture?: Texture) {
-        super(texture);
+    constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number, texture?: Texture) {
+        super(turningSpeed, maxSpeed, accel, decel, texture);
         this.safeDistance = this.maxSpeed**2 / 2 / this.decel;
     }
 
@@ -56,6 +56,11 @@ export class CommandableSprite extends MovableSprite {
             return;
         }
         if (directionDiff > (Math.PI / 2)) {
+            this.decSpeed();
+            return;
+        }
+        if ((directionDiff > (Math.PI / 45)) && (targetDistance < 5000*this.accel)) {
+            // If very near, move only when angle < 4 degree.
             this.decSpeed();
             return;
         }

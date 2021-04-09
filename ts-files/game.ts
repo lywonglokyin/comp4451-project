@@ -18,7 +18,7 @@ app.view.addEventListener('contextmenu', (e) => {
 
 const gameState: string = 'play';
 
-const commander: MovableSprite = new MovableSprite(PIXI.Texture.from('images/testunit.png'));
+const commander: MovableSprite = new MovableSprite(0.03, 5, 0.03, 0.05, PIXI.Texture.from('images/testunit.png'));
 commander.anchor.set(0.5);
 
 commander.x = 100;
@@ -63,7 +63,9 @@ let selectedSprite: CommandableSprite|null = null;
 const noOfUnits = 7;
 const units: CommandableSprite[] = [];
 for (let i = 0; i < noOfUnits; i++) {
-    const unit: CommandableSprite = new CommandableSprite(PIXI.Texture.from('images/testunit2.png'));
+    const unit: CommandableSprite = new CommandableSprite(
+        0.03, 5, 0.03, 0.05,
+        PIXI.Texture.from('images/testunit2.png'));
     unit.anchor.set(0.5);
     unit.x = 100 + i*100;
     unit.y = 200;
@@ -81,14 +83,10 @@ for (let i = 0; i < noOfUnits; i++) {
     app.stage.addChild(unit);
 }
 
-const cavUnit: CommandableSprite = new CommandableSprite(PIXI.Texture.from('images/testunit3.png'));
+const cavUnit: CommandableSprite = new CommandableSprite(0.02, 8, 0.1, 0.08, PIXI.Texture.from('images/testunit3.png'));
 cavUnit.anchor.set(0.5);
 cavUnit.x = 200;
 cavUnit.y = 300;
-cavUnit.turningSpeed = 0.02;
-cavUnit.accel = 0.1;
-cavUnit.decel = 0.01;
-cavUnit.maxSpeed = 8;
 cavUnit.interactive = true;
 cavUnit.on('mousedown', (e: PointerEvent)=>{
     console.log('clicked.');
