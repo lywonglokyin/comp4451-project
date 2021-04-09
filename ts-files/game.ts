@@ -113,15 +113,31 @@ cavUnit.on('mousedown', (e: PointerEvent)=>{
 gameContainer.addChild(cavUnit);
 
 app.view.addEventListener('contextmenu', (e: MouseEvent) => {
-    const targetX: number = e.clientX;
-    const targetY: number = e.clientY;
+    if (selectedSprite !== null) {
+        const targetX: number = e.clientX;
+        const targetY: number = e.clientY;
 
-    const localClickPos: Point = new PIXI.Point(targetX, targetY);
-    const localPos: Point = gameContainer.toLocal(localClickPos);
+        const localClickPos: Point = new PIXI.Point(targetX, targetY);
+        const localPos: Point = gameContainer.toLocal(localClickPos);
 
-    selectedSprite!.targetX = localPos.x;
-    selectedSprite!.targetY = localPos.y;
-    selectedSprite!.hasTarget = true;
+        selectedSprite.targetX = localPos.x;
+        selectedSprite.targetY = localPos.y;
+        selectedSprite.hasTarget = true;
+    }
+});
+
+/**
+ * Camera scrolling logic.
+ */
+app.view.addEventListener('wheel', (e: WheelEvent)=>{
+    const isScrollUp: boolean = e.deltaY < 0;
+    if (isScrollUp) {
+        gameContainer.scale.x *= 1.05;
+        gameContainer.scale.y *= 1.05;
+    } else {
+        gameContainer.scale.x *= 0.95;
+        gameContainer.scale.y *= 0.95;
+    }
 });
 
 
