@@ -1,68 +1,67 @@
-import { Texture } from "pixi.js";
-import { MovableSprite } from "./moveableSprite.js";
-import { fmod } from "./utils.js";
+import {Texture} from 'pixi.js';
+import {MovableSprite} from './moveableSprite.js';
+import {fmod} from './utils.js';
 
-export class CommandableSprite extends MovableSprite{
-
+export class CommandableSprite extends MovableSprite {
     hasTarget: boolean = false;
     targetX: number = 0;
     targetY: number = 0;
-    safe_distance: number;  // The distance from which the object need to decel
+    safeDistance: number; // The distance from which the object need to decel
 
-    constructor(texture?: Texture){
+    constructor(texture?: Texture) {
         super(texture);
-        this.safe_distance = this.maxSpeed**2 / 2 / this.decel;
+        this.safeDistance = this.maxSpeed**2 / 2 / this.decel;
     }
 
-    public move(){
-        if (this.hasTarget){
-            let direction_diff = this.align_direction();
-            this.adjustSpeed(direction_diff);
+    public move() {
+        if (this.hasTarget) {
+            const directionDiff = this.alignDirection();
+            this.adjustSpeed(directionDiff);
         }
         super.move();
     }
 
-    private align_direction: ()=>number = ()=>{
-        let directionToTarget = fmod(this.directionToTarget(), 2*Math.PI);
-        let myDirection = fmod(this.rotation, 2 * Math.PI);
-        let direction_diff = Math.abs(directionToTarget-myDirection);
-        let directionTolerance: number = 0.05;
-        if (direction_diff < directionTolerance){
-            // Same direction
-            return direction_diff;
+    private alignDirection: ()=>number = ()=>{
+        const directionToTarget = fmod(this.directionToTarget(), 2*Math.PI);
+        const myDirection = fmod(this.rotation, 2 * Math.PI);
+        const directionDiff = Math.abs(directionToTarget-myDirection);
+        const directionTolerance: number = 0.05;
+        if (directionDiff < directionTolerance ) {
+        // Same direction
+            return directionDiff;
         }
-        if (myDirection < directionToTarget){
-            if (directionToTarget < (myDirection + Math.PI)){
+        if (myDirection < directionToTarget) {
+            if (directionToTarget < (myDirection + Math.PI)) {
                 this.turnRight();
             } else {
                 this.turnLeft();
             }
         } else {
-            if (directionToTarget > (myDirection - Math.PI)){
+            if (directionToTarget > (myDirection - Math.PI)) {
                 this.turnLeft();
             } else {
                 this.turnRight();
             }
         }
-        return direction_diff;
+        return directionDiff;
     }
 
-    private adjustSpeed: (d: number)=>void = (direction_diff: number)=>{
+    private adjustSpeed: (d: number)=>void = (directionDiff: number)=>{
         // adjust sprite speed based on distance to target.
-        let targetDistance = this.distanceToTarget();
-        let distance_tolerance = 4;
-        if (targetDistance < distance_tolerance){
+        const targetDistance = this.distanceToTarget();
+        const distanceTolerance = 4;
+        if (targetDistance < distanceTolerance) {
             this.speed = 0;
             this.hasTarget = false;
             return;
         }
-        if (direction_diff > (Math.PI / 2)){
+        if (directionDiff > (Math.PI / 2)) {
             this.decSpeed();
             return;
         }
-        if (targetDistance < this.safe_distance){
-            let required_decel = this.speed ** 2 / 2 / targetDistance;
-            if (required_decel < this.decel){
+        if (targetDistance < this.safeDistance) {
+            const requiredDecel = this.speed ** 2 / 2 / targetDistance;
+            if (requiredDecel < this.decel) {
                 this.incSpeed();
             } else {
                 this.decSpeed();
@@ -77,6 +76,8 @@ export class CommandableSprite extends MovableSprite{
     }
 
     public directionToTarget: ()=>number = ()=>{
-        return Math.atan2((this.targetY-this.y), (this.targetX-this.x)) + Math.PI / 2;
+        return Math.atan2(
+            (this.targetY-this.y),
+            (this.targetX-this.x)) + Math.PI / 2;
     }
 }

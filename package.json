@@ -1,0 +1,30 @@
+{
+  "name": "comp4451",
+  "version": "1.0.0",
+  "description": "Run `tsc` or `nodemon`, then open a live server.",
+  "main": "index.js",
+  "dependencies": {
+    "pixi.js": "^6.0.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.21.0",
+    "@typescript-eslint/parser": "^4.21.0",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.23.0",
+    "eslint-config-google": "^0.14.0",
+    "typescript": "^4.2.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lywonglokyin/comp4451-project.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lywonglokyin/comp4451-project/issues"
+  },
+  "homepage": "https://github.com/lywonglokyin/comp4451-project#readme"
+}
