@@ -1,6 +1,6 @@
 import * as pixiNamespace from 'pixi.js';
 import {Application} from 'pixi.js';
-import {Game} from './game.js';
+import {Game, Player} from './game.js';
 import {UnitTypes} from './units/unitTypes.js';
 
 declare let PIXI: typeof pixiNamespace;
@@ -23,6 +23,7 @@ const game = new Game(3000, 6000, app);
 const interaction = game.getInteractionObject();
 const commander = game.addUnit(100, 200, UnitTypes.Commander, false);
 const infantry = game.addUnit(200, 200, UnitTypes.Infantry);
+const enemyInfantry = game.addUnit(200, 100, UnitTypes.Infantry, true, Player.Two);
 const cavalry = game.addUnit(300, 200, UnitTypes.Cavalry);
 interaction.bindMovementControl(cavalry);
 game.fixCamera(cavalry);

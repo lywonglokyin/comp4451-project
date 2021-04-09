@@ -9,6 +9,11 @@ import {UnitTypes} from './units/unitTypes.js';
 
 declare let PIXI: typeof pixiNamespace;
 
+export enum Player{
+    One,
+    Two
+}
+
 export class Game {
     private state: string = 'play';
     private gameContainer: Container = new PIXI.Container();
@@ -42,13 +47,13 @@ export class Game {
     }
 
     public addUnit(x: number, y: number,
-        unitType: UnitTypes, commandable:boolean = true, player: number = 0): CommandableSprite {
+        unitType: UnitTypes, commandable:boolean = true, player: Player = Player.One): CommandableSprite {
         const localPos = this.gameContainer.toLocal(new PIXI.Point(x, y));
         let unit: CommandableSprite;
         if (unitType == UnitTypes.Commander) {
             unit = new Commander(localPos.x, localPos.y);
         } else if (unitType == UnitTypes.Infantry) {
-            unit = new Infantry(localPos.x, localPos.y);
+            unit = new Infantry(localPos.x, localPos.y, player);
         } else if (unitType == UnitTypes.Cavalry) {
             unit = new Cavalry(localPos.x, localPos.y);
         } else {
