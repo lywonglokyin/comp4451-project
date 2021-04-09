@@ -90,17 +90,13 @@ export class Game {
 
     private checkBoundAndEnforce(unit: CommandableSprite) {
         if (unit.x < this.gameLeftBound) {
-            unit.speed = 0;
             unit.x = this.gameLeftBound;
         } else if (unit.x > this.gameRightBound) {
-            unit.speed = 0;
             unit.x = this.gameRightBound;
         }
         if (unit.y < this.gameUpBound) {
-            unit.speed = 0;
             unit.y = this.gameUpBound;
         } else if (unit.y > this.gameDownBound) {
-            unit.speed = 0;
             unit.y = this.gameDownBound;
         }
     }
