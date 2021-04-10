@@ -82,6 +82,13 @@ export class Game {
         this.selectedSprite.tint = 0xFF5555;
     }
 
+    public deselectSprite(): void {
+        if (this.selectedSprite !== null) {
+            this.selectedSprite.tint = 0xFFFFFF;
+            this.selectedSprite = null;
+        }
+    }
+
     public setSelectedSpriteTarget(x: number, y: number) {
         if (this.selectedSprite == null) {
             return;

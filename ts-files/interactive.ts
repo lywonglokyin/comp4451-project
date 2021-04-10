@@ -18,6 +18,7 @@ export class Interaction {
 
         this.bindRightClickMove();
         this.bindCameraZoom();
+        this.bindDeselectSprite();
     }
 
     public bindMovementControl(sprite: MovableSprite) {
@@ -55,6 +56,7 @@ export class Interaction {
         sprite.on('mousedown', (e: PointerEvent)=>{
             const targetSprite = e.target! as unknown as CommandableSprite;
             this.game.setSelectedSprite(targetSprite);
+            e.stopPropagation();
         });
     }
 
@@ -74,6 +76,13 @@ export class Interaction {
             } else {
                 this.game.zoomOut();
             }
+        });
+    }
+
+    public bindDeselectSprite() {
+        this.app.stage.interactive = true;
+        this.app.stage.on('mousedown', ()=>{
+            this.game.deselectSprite();
         });
     }
 }
