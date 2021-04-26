@@ -1,1 +1,3 @@
-Run `tsc` or `nodemon`, then open a live server.
+To run, use `npm install` then `npm start`.
+
+To develop, use `nodemon`.
