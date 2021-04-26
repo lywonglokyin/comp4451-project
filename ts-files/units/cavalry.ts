@@ -17,6 +17,7 @@ export class Cavalry extends CommandableSprite {
             Cavalry.maxSpeed,
             Cavalry.accel,
             Cavalry.decel,
+            78,
             PIXI.Texture.from(Cavalry.assetAddr));
         this.anchor.set(0.5);
         this.x = x;

@@ -17,6 +17,7 @@ export class Commander extends CommandableSprite {
             Commander.maxSpeed,
             Commander.accel,
             Commander.decel,
+            78,
             PIXI.Texture.from(Commander.assetAddr));
         this.anchor.set(0.5);
         this.x = x;

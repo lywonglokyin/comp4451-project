@@ -25,7 +25,13 @@ const commander = game.addUnit(100, 200, UnitTypes.Commander, false);
 const infantry = game.addUnit(200, 200, UnitTypes.Infantry);
 const enemyInfantry = game.addUnit(200, 100, UnitTypes.Infantry, true, Player.Two);
 const cavalry = game.addUnit(300, 200, UnitTypes.Cavalry);
+for (let x=50; x<1000; x+=40) {
+    for (let y=300; y<700; y+=40) {
+        game.addUnit(x, y, UnitTypes.Infantry);
+    }
+}
 interaction.bindMovementControl(cavalry);
 game.fixCamera(cavalry);
 game.showGame(app);
+app.ticker.speed = 0.001;
 game.attachGameLoop(app.ticker);

@@ -10,12 +10,16 @@ export class MovableSprite extends PIXI.Sprite {
     accel: number;
     decel: number;
 
-    constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number, texture?: Texture) {
+    unitSize: number; // For now, it is assumed diameter of circle, this is used for collsion detection only
+
+    constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
+        unitSize: number, texture?: Texture) {
         super(texture);
         this.turningSpeed = turningSpeed;
         this.maxSpeed = maxSpeed;
         this.accel = accel;
         this.decel = decel;
+        this.unitSize = unitSize;
     }
 
     public turnLeft: ()=>void = ()=>{
@@ -53,6 +57,12 @@ export class MovableSprite extends PIXI.Sprite {
         this.speed -= this.decel;
         if (this.speed < 0) {
             this.speed = 0;
+        }
+    }
+
+    public limitSpeed() {
+        if (this.speed > (this.maxSpeed * 0.3)) {
+            this.speed *= 0.8;
         }
     }
 }

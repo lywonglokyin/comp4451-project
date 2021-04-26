@@ -25,6 +25,7 @@ export class Infantry extends CommandableSprite {
             Infantry.maxSpeed,
             Infantry.accel,
             Infantry.decel,
+            78,
             PIXI.Texture.from(assetAddr));
         this.anchor.set(0.5);
         this.x = x;

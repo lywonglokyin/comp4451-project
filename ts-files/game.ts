@@ -1,11 +1,13 @@
 import * as pixiNamespace from 'pixi.js';
 import {Application, Container, Point, Sprite, Ticker, TilingSprite} from 'pixi.js';
+import {CollisionHandler} from './collision.js';
 import {CommandableSprite} from './commandableSprite.js';
 import {Interaction} from './interactive.js';
 import {Cavalry} from './units/cavalry.js';
 import {Commander} from './units/commander.js';
 import {Infantry} from './units/infantry.js';
 import {UnitTypes} from './units/unitTypes.js';
+import {euclideanDist} from './utils.js';
 
 declare let PIXI: typeof pixiNamespace;
 
@@ -17,6 +19,9 @@ export enum Player{
 export class Game {
     private state: string = 'play';
     private gameContainer: Container = new PIXI.Container();
+
+    gameWidth: number;
+    gameHeight: number;
 
     private gameLeftBound: number;
     private gameUpBound: number;
@@ -30,15 +35,20 @@ export class Game {
     private cameraFocus: Sprite|null = null;
 
     private interaction: Interaction; // Handles I/O.
+    private collisionHandler: CollisionHandler; // Handles collision.
 
     private selectedSprite: CommandableSprite|null = null;
 
     readonly mapTileAsset: string = 'images/tiles.png'
 
     constructor(width: number, height: number, app: Application) {
+        this.gameWidth = width;
+        this.gameHeight = height;
         const mapSprite: TilingSprite = new PIXI.TilingSprite(PIXI.Texture.from(this.mapTileAsset), width, height);
         this.gameContainer.addChild(mapSprite);
+
         this.interaction = new Interaction(this, app);
+        this.collisionHandler = new CollisionHandler(this, 100);
 
         this.gameLeftBound = this.gameBoundPadding;
         this.gameUpBound = this.gameBoundPadding;
@@ -71,6 +81,7 @@ export class Game {
         } else {
             this.playerTwoUnits.push(unit);
         }
+        this.collisionHandler.addUnit(unit);
         return unit;
     }
 
@@ -150,6 +161,20 @@ export class Game {
             unit.act();
             this.checkBoundAndEnforce(unit);
         });
+        this.collisionHandler.detectCollisions();
+    }
+
+    public collide(unit: CommandableSprite, another: CommandableSprite) {
+        // Include actions to handle after collision occured
+        unit.limitSpeed();
+        another.limitSpeed();
+        const distance = euclideanDist(unit.x, unit.y, another.x, another.y);
+        const xDisplacement = (unit.x - another.x) / distance / 10;
+        const yDisplacement = (unit.y - another.y) / distance / 10;
+        unit.x += xDisplacement;
+        unit.y += yDisplacement;
+        another.x -= xDisplacement;
+        another.y -= yDisplacement;
     }
 
     public getInteractionObject(): Interaction {
