@@ -7,7 +7,7 @@ import {Cavalry} from './units/cavalry.js';
 import {Commander} from './units/commander.js';
 import {Infantry} from './units/infantry.js';
 import {UnitTypes} from './units/unitTypes.js';
-import {euclideanDist} from './utils.js';
+import {angleToAnother, euclideanDist, fmod} from './utils.js';
 
 declare let PIXI: typeof pixiNamespace;
 
@@ -37,7 +37,9 @@ export class Game {
     private interaction: Interaction; // Handles I/O.
     private collisionHandler: CollisionHandler; // Handles collision.
 
-    private selectedSprite: CommandableSprite|null = null;
+    private selectedSprites: CommandableSprite[] = []; // This array should remain sorted according to x position.
+    private selectedSpritesAnchorX: number = 0;
+    private selectedSpritesAnchorY: number = 0;
 
     readonly mapTileAsset: string = 'images/tiles.png'
 
@@ -85,30 +87,111 @@ export class Game {
         return unit;
     }
 
-    public setSelectedSprite(sprite: CommandableSprite): void {
-        if (this.selectedSprite !== null) {
-            this.selectedSprite.tint = 0xFFFFFF;
+    public addSelectedSprite(sprite: CommandableSprite): void {
+        if (this.selectedSprites.length === 0) {
+            this.selectedSprites.push(sprite);
+        } else {
+            const index = this.findInsertIndex(sprite, 0, this.selectedSprites.length - 1);
+            this.selectedSprites.splice(index, 0, sprite);
         }
-        this.selectedSprite = sprite;
-        this.selectedSprite.tint = 0xFF5555;
+        sprite.tint = 0xFF5555;
+    }
+
+    private findInsertIndex(sprite: CommandableSprite, first: number, last: number): number {
+        if (first > last) {
+            return first;
+        }
+        const mid = (first + last) >> 1; // Divide by 2 and round down.
+        const targetX = this.selectedSprites[mid].x;
+        if (sprite.x > targetX) {
+            return this.findInsertIndex(sprite, mid+1, last);
+        } else if (sprite.x < targetX) {
+            return this.findInsertIndex(sprite, first, mid-1);
+        } else {
+            return mid;
+        }
     }
 
     public deselectSprite(): void {
-        if (this.selectedSprite !== null) {
-            this.selectedSprite.tint = 0xFFFFFF;
-            this.selectedSprite = null;
-        }
+        this.selectedSprites.forEach((sprite)=>{
+            sprite.tint = 0xFFFFFF;
+        });
+        this.selectedSprites = [];
     }
 
-    public setSelectedSpriteTarget(x: number, y: number) {
-        if (this.selectedSprite == null) {
+    public addShadowSprite(x: number, y:number): void {
+        if (this.selectedSprites === []) {
             return;
         }
         const localClickPos: Point = new PIXI.Point(x, y);
         const localPos: Point = this.gameContainer.toLocal(localClickPos);
-        this.selectedSprite.targetX = localPos.x;
-        this.selectedSprite.targetY = localPos.y;
-        this.selectedSprite.hasTarget = true;
+
+        this.selectedSpritesAnchorX = localPos.x; // Used later for multi unit selection.
+        this.selectedSpritesAnchorY = localPos.y; // Used later for multi unit selection.
+
+        this.selectedSprites.forEach((selectedSprite)=>{
+            selectedSprite.targetX = localPos.x;
+            selectedSprite.targetY = localPos.y;
+            selectedSprite.targetDirection = selectedSprite.directionToTarget();
+
+            const shadowSprite = new PIXI.Sprite(selectedSprite.texture);
+            shadowSprite.alpha = 0.3;
+            shadowSprite.anchor.set(0.5);
+            this.gameContainer.addChild(shadowSprite);
+            selectedSprite.setTargetSprite(shadowSprite);
+
+            selectedSprite.updateShadowSprite();
+        });
+    }
+
+    public shadowSpriteDrag(x: number, y: number): void {
+        if (this.selectedSprites === []) {
+            return;
+        }
+        const localClickPos: Point = new PIXI.Point(x, y);
+        const localPos: Point = this.gameContainer.toLocal(localClickPos);
+        if (this.selectedSprites.length === 1) {
+            const selectedSprite = this.selectedSprites[0];
+            const shadowDirection: number = angleToAnother(
+                selectedSprite.targetX,
+                selectedSprite.targetY,
+                localPos.x,
+                localPos.y,
+            );
+            selectedSprite.targetDirection = shadowDirection;
+            selectedSprite.updateShadowSprite();
+        } else {
+            const numSelected = this.selectedSprites.length;
+            const xDiff = (localPos.x - this.selectedSpritesAnchorX)/(numSelected-1);
+            const yDiff = (localPos.y - this.selectedSpritesAnchorY)/(numSelected-1);
+            const direction = fmod(angleToAnother(
+                this.selectedSpritesAnchorX,
+                this.selectedSpritesAnchorY,
+                localPos.x,
+                localPos.y) - Math.PI / 2, 2* Math.PI);
+            const needToRevserse = !((direction >= 0 && direction <= Math.PI/2) ||
+             (direction>= 3*Math.PI/2 && direction < 2*Math.PI));
+
+            for (let i=0; i< this.selectedSprites.length; ++i) {
+                if (needToRevserse) {
+                    this.selectedSprites[i].targetX = localPos.x - xDiff * i;
+                    this.selectedSprites[i].targetY = localPos.y - yDiff * i;
+                } else {
+                    this.selectedSprites[i].targetX = this.selectedSpritesAnchorX + xDiff * i;
+                    this.selectedSprites[i].targetY = this.selectedSpritesAnchorY + yDiff * i;
+                }
+                this.selectedSprites[i].targetDirection = direction;
+                this.selectedSprites[i].updateShadowSprite();
+            }
+        }
+    }
+
+    public setSelectedSpriteTarget() {
+        this.selectedSprites.forEach((sprite)=>{
+            sprite.hasTarget = true;
+            sprite.needAlign = true;
+        });
+        this.deselectSprite();
     }
 
     private checkBoundAndEnforce(unit: CommandableSprite) {

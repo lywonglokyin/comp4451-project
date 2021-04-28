@@ -1,7 +1,7 @@
 import * as pixiNamespace from 'pixi.js';
-
-import {Application, Point, Ticker} from 'pixi.js';
+import {Application, InteractionEvent, Sprite} from 'pixi.js';
 import {CommandableSprite} from './commandableSprite.js';
+
 import {Game} from './game.js';
 import {KeyboardListener} from './keyboard_listener.js';
 import {MovableSprite} from './moveableSprite.js';
@@ -11,6 +11,8 @@ declare let PIXI: typeof pixiNamespace;
 export class Interaction {
     app: Application;
     game: Game;
+
+    isRightClickDown: boolean = false;
 
     constructor(game: Game, app: Application) {
         this.app = app;
@@ -53,18 +55,34 @@ export class Interaction {
     }
 
     public bindCommandable(sprite: CommandableSprite) {
-        sprite.on('mousedown', (e: PointerEvent)=>{
+        sprite.on('mousedown', (e: InteractionEvent)=>{
+            const originalEvent = <MouseEvent>e.data.originalEvent;
+            console.log(originalEvent.button);
             const targetSprite = e.target! as unknown as CommandableSprite;
-            this.game.setSelectedSprite(targetSprite);
+            this.game.addSelectedSprite(targetSprite);
             e.stopPropagation();
         });
     }
 
     public bindRightClickMove() {
-        this.app.view.addEventListener('contextmenu', (e: MouseEvent) => {
-            const targetX: number = e.clientX;
-            const targetY: number = e.clientY;
-            this.game.setSelectedSpriteTarget(targetX, targetY);
+        this.app.view.addEventListener('mousedown', (e: MouseEvent)=>{
+            if (e.button === 2) {
+                this.isRightClickDown = true;
+                const targetX: number = e.clientX;
+                const targetY: number = e.clientY;
+                this.game.addShadowSprite(targetX, targetY);
+            }
+        });
+        this.app.view.addEventListener('mousemove', (e: MouseEvent)=>{
+            if (this.isRightClickDown) {
+                const targetX: number = e.clientX;
+                const targetY: number = e.clientY;
+                this.game.shadowSpriteDrag(targetX, targetY);
+            }
+        });
+        this.app.view.addEventListener('contextmenu', () => {
+            this.game.setSelectedSpriteTarget();
+            this.isRightClickDown = false;
         });
     }
 

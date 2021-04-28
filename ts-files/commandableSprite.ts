@@ -1,12 +1,17 @@
-import {Texture} from 'pixi.js';
+import {Sprite, Texture} from 'pixi.js';
 import {MovableSprite} from './moveableSprite.js';
-import {fmod} from './utils.js';
+import {angleToAnother, fmod} from './utils.js';
 
 export class CommandableSprite extends MovableSprite {
     hasTarget: boolean = false;
+    needAlign: boolean = false; // True when this sprite need direction adjustment at its final position.
     targetX: number = 0;
     targetY: number = 0;
+    targetDirection: number = 0; // Which direction the spirte should face at the final position.
+    private targetSprite: Sprite|null = null;
     safeDistance: number; // The distance from which the object need to decel
+
+    readonly DIRECTION_TORLERANCE: number = 0.05;
 
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
         unitSize:number, texture?: Texture) {
@@ -16,29 +21,34 @@ export class CommandableSprite extends MovableSprite {
 
     public move() {
         if (this.hasTarget) {
-            const directionDiff = this.alignDirection();
+            const directionDiff = this.alignDirection(this.directionToTarget());
             this.adjustSpeed(directionDiff);
+        } else if (this.needAlign) {
+            const directionDiff = this.alignDirection(this.targetDirection);
+            if (directionDiff < this.DIRECTION_TORLERANCE) {
+                this.needAlign = false;
+            }
         }
         super.move();
     }
 
-    private alignDirection: ()=>number = ()=>{
-        const directionToTarget = fmod(this.directionToTarget(), 2*Math.PI);
+
+    private alignDirection: (directoin: number)=>number = (targetDirection: number)=>{
+        targetDirection = fmod(targetDirection, 2*Math.PI);
         const myDirection = fmod(this.rotation, 2 * Math.PI);
-        const directionDiff = Math.abs(directionToTarget-myDirection);
-        const directionTolerance: number = 0.05;
-        if (directionDiff < directionTolerance ) {
+        const directionDiff = Math.abs(targetDirection-myDirection);
+        if (directionDiff < this.DIRECTION_TORLERANCE ) {
         // Same direction
             return directionDiff;
         }
-        if (myDirection < directionToTarget) {
-            if (directionToTarget < (myDirection + Math.PI)) {
+        if (myDirection < targetDirection) {
+            if (targetDirection < (myDirection + Math.PI)) {
                 this.turnRight();
             } else {
                 this.turnLeft();
             }
         } else {
-            if (directionToTarget > (myDirection - Math.PI)) {
+            if (targetDirection > (myDirection - Math.PI)) {
                 this.turnLeft();
             } else {
                 this.turnRight();
@@ -54,6 +64,10 @@ export class CommandableSprite extends MovableSprite {
         if (targetDistance < distanceTolerance) {
             this.speed = 0;
             this.hasTarget = false;
+            if (this.targetSprite !== null) {
+                this.targetSprite.destroy();
+                this.targetSprite = null;
+            }
             return;
         }
         if (directionDiff > (Math.PI / 2)) {
@@ -82,8 +96,28 @@ export class CommandableSprite extends MovableSprite {
     }
 
     public directionToTarget: ()=>number = ()=>{
-        return Math.atan2(
-            (this.targetY-this.y),
-            (this.targetX-this.x)) + Math.PI / 2;
+        return angleToAnother(this.x, this.y, this.targetX, this.targetY);
+    }
+
+    public setTargetSprite(sprite: Sprite): void {
+        if (this.targetSprite !== null) {
+            this.targetSprite.destroy();
+        }
+        this.targetSprite = sprite;
+    }
+
+    public getTargetSprite(): Sprite {
+        if (this.targetSprite === null) {
+            throw Error('Target sprite not found for this object!');
+        }
+        return this.targetSprite;
+    }
+
+    public updateShadowSprite() {
+        if (this.targetSprite !== null) {
+            this.targetSprite.x = this.targetX;
+            this.targetSprite.y = this.targetY;
+            this.targetSprite.rotation = this.targetDirection;
+        }
     }
 }
