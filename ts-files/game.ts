@@ -38,6 +38,7 @@ export class Game {
     private collisionHandler: CollisionHandler; // Handles collision.
 
     private selectedSprites: CommandableSprite[] = []; // This array should remain sorted according to x position.
+    private selectedSpritesSet: Set<CommandableSprite> = new Set();
     private selectedSpritesAnchorX: number = 0;
     private selectedSpritesAnchorY: number = 0;
 
@@ -91,9 +92,13 @@ export class Game {
         if (this.selectedSprites.length === 0) {
             this.selectedSprites.push(sprite);
         } else {
+            if (this.selectedSpritesSet.has(sprite)) {
+                return;
+            }
             const index = this.findInsertIndex(sprite, 0, this.selectedSprites.length - 1);
             this.selectedSprites.splice(index, 0, sprite);
         }
+        this.selectedSpritesSet.add(sprite);
         sprite.tint = 0xFF5555;
     }
 
@@ -117,6 +122,7 @@ export class Game {
             sprite.tint = 0xFFFFFF;
         });
         this.selectedSprites = [];
+        this.selectedSpritesSet.clear();
     }
 
     public addShadowSprite(x: number, y:number): void {

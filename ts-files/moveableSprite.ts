@@ -61,7 +61,7 @@ export class MovableSprite extends PIXI.Sprite {
     }
 
     public limitSpeed() {
-        if (this.speed > (this.maxSpeed * 0.3)) {
+        if (this.speed > (this.maxSpeed * 0.5)) {
             this.speed *= 0.8;
         }
     }
