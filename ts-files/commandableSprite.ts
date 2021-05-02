@@ -1,5 +1,6 @@
 import {Sprite, Texture} from 'pixi.js';
 import {MovableSprite} from './moveableSprite.js';
+import {Player} from './player.js';
 import {angleToAnother, fmod} from './utils.js';
 
 export class CommandableSprite extends MovableSprite {
@@ -14,8 +15,9 @@ export class CommandableSprite extends MovableSprite {
     readonly DIRECTION_TORLERANCE: number = 0.05;
 
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
-        unitSize:number, texture?: Texture) {
-        super(turningSpeed, maxSpeed, accel, decel, unitSize, texture);
+        unitSize:number, weight: number, hp: number, attack: number, player: Player,
+        attackCooldown: number, texture?: Texture) {
+        super(turningSpeed, maxSpeed, accel, decel, unitSize, weight, hp, attack, player, attackCooldown, texture);
         this.safeDistance = this.maxSpeed**2 / 2 / this.decel;
     }
 

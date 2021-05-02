@@ -1,7 +1,8 @@
 import * as pixiNamespace from 'pixi.js';
 import {Application} from 'pixi.js';
-import {Game, Player} from './game.js';
+import {Game} from './game.js';
 import {UnitTypes} from './units/unitTypes.js';
+import {Player} from './player.js';
 
 declare let PIXI: typeof pixiNamespace;
 

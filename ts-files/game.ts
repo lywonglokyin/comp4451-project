@@ -3,18 +3,15 @@ import {Application, Container, Point, Sprite, Ticker, TilingSprite} from 'pixi.
 import {CollisionHandler} from './collision.js';
 import {CommandableSprite} from './commandableSprite.js';
 import {Interaction} from './interactive.js';
+import {MovableSprite} from './moveableSprite.js';
 import {Cavalry} from './units/cavalry.js';
 import {Commander} from './units/commander.js';
 import {Infantry} from './units/infantry.js';
 import {UnitTypes} from './units/unitTypes.js';
+import {Player} from './player.js';
 import {angleToAnother, euclideanDist, fmod} from './utils.js';
 
 declare let PIXI: typeof pixiNamespace;
-
-export enum Player{
-    One,
-    Two
-}
 
 export class Game {
     private state: string = 'play';
@@ -64,11 +61,11 @@ export class Game {
         const localPos = this.gameContainer.toLocal(new PIXI.Point(x, y));
         let unit: CommandableSprite;
         if (unitType == UnitTypes.Commander) {
-            unit = new Commander(localPos.x, localPos.y);
+            unit = new Commander(localPos.x, localPos.y, player);
         } else if (unitType == UnitTypes.Infantry) {
             unit = new Infantry(localPos.x, localPos.y, player);
         } else if (unitType == UnitTypes.Cavalry) {
-            unit = new Cavalry(localPos.x, localPos.y);
+            unit = new Cavalry(localPos.x, localPos.y, player);
         } else {
             throw new Error('Unexpected unit type!');
         }
@@ -200,6 +197,34 @@ export class Game {
         this.deselectSprite();
     }
 
+    public applyDamage(unit: MovableSprite, direction: number, impulse: number, damage: number): void {
+        unit.applyDamage(direction, impulse, damage);
+    }
+
+    public isHealthy(unit: MovableSprite): boolean {
+        return unit.hp >= 0;
+    }
+
+    public destroyUnit(unit: MovableSprite): void {
+        let unitList: MovableSprite[] = [];
+        if (unit.player === Player.One) {
+            unitList = this.playerOneUnits;
+        } else if (unit.player === Player.Two) {
+            unitList = this.playerTwoUnits;
+        }
+        let unitIndex = unitList.indexOf(unit, 0);
+        unitList.splice(unitIndex, 1);
+        unitIndex = this.collisionHandler.units.indexOf(unit, 0);
+        this.collisionHandler.units.splice(unitIndex, 1);
+        for (let i=0; i<this.selectedSprites.length; ++i) {
+            if (unit === this.selectedSprites[i]) {
+                this.selectedSprites.splice(i, 1);
+                break;
+            }
+        }
+        unit.destroy();
+    }
+
     private checkBoundAndEnforce(unit: CommandableSprite) {
         if (unit.x < this.gameLeftBound) {
             unit.x = this.gameLeftBound;
@@ -242,28 +267,74 @@ export class Game {
             this.gameContainer.pivot.x = this.cameraFocus.x;
             this.gameContainer.pivot.y = this.cameraFocus.y;
         }
-        this.playerOneUnits.forEach((unit)=>{
-            unit.act();
-            this.checkBoundAndEnforce(unit);
-        });
-        this.playerTwoUnits.forEach((unit)=>{
+        this.playerOneUnits.concat(this.playerTwoUnits).forEach((unit)=>{
             unit.act();
             this.checkBoundAndEnforce(unit);
         });
         this.collisionHandler.detectCollisions();
+        // Units health check.
+        this.playerOneUnits.concat(this.playerTwoUnits).forEach((unit)=>{
+            if (!this.isHealthy(unit)) {
+                this.destroyUnit(unit);
+            }
+        });
+        // Check bound after collision
+        this.playerOneUnits.concat(this.playerTwoUnits).forEach((unit)=>{
+            this.checkBoundAndEnforce(unit);
+        });
     }
 
-    public collide(unit: CommandableSprite, another: CommandableSprite) {
+
+    public collide(unit: MovableSprite, another: MovableSprite) {
         // Include actions to handle after collision occured
-        unit.limitSpeed();
-        another.limitSpeed();
         const distance = euclideanDist(unit.x, unit.y, another.x, another.y);
-        const xDisplacement = (unit.x - another.x) / distance / 10;
-        const yDisplacement = (unit.y - another.y) / distance / 10;
-        unit.x += xDisplacement;
-        unit.y += yDisplacement;
-        another.x -= xDisplacement;
-        another.y -= yDisplacement;
+        if (unit.player === another.player) {
+            unit.limitSpeed();
+            another.limitSpeed();
+            const xDisplacement = (unit.x - another.x) / distance / 10;
+            const yDisplacement = (unit.y - another.y) / distance / 10;
+            unit.x += xDisplacement;
+            unit.y += yDisplacement;
+            another.x -= xDisplacement;
+            another.y -= yDisplacement;
+        } else {
+            const direction = angleToAnother(unit.x, unit.y, another.x, another.y);
+
+            if (unit.canAttack()) {
+                const angleAlignment = Math.cos(direction - unit.rotation);
+                if (angleAlignment > 0) {
+                    const impulse = angleAlignment * unit.weight * unit.speed;
+                    const damage = this.calcDamage(unit.attackStat, unit.speed);
+                    console.log('unit', direction, unit.rotation, angleAlignment, impulse, damage);
+                    another.applyDamage(direction, impulse, damage);
+                    unit.attack();
+                }
+            }
+            if (another.canAttack()) {
+                const angleAlignment = Math.cos((direction+Math.PI) - another.rotation);
+                if (angleAlignment>0) {
+                    const impulse = angleAlignment * another.weight * another.speed;
+                    const damage = this.calcDamage(another.attackStat, another.speed);
+                    console.log('another', direction, another.rotation, angleAlignment, impulse, damage);
+                    unit.applyDamage(direction + Math.PI, impulse, damage);
+                    another.attack();
+                }
+            }
+
+            const xDiff = - (unit.x - another.x) -
+            Math.sin(direction) * (unit.unitSize + another.unitSize)/2;
+            const yDiff = - (unit.y - another.y) +
+            Math.cos(direction) * (unit.unitSize + another.unitSize)/2;
+            unit.x += xDiff/2;
+            unit.y += yDiff/2;
+            another.x -= xDiff/2;
+            another.y -= yDiff/2;
+        }
+    }
+
+    private calcDamage(attackStat: number, unitSpeed: number): number {
+        const speedAttenuation = unitSpeed<2 ? 1 : (unitSpeed**2 / 30 +1);
+        return attackStat * speedAttenuation;
     }
 
     public getInteractionObject(): Interaction {
