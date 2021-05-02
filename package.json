@@ -2,10 +2,15 @@
   "name": "comp4451",
   "version": "1.0.0",
   "description": "Run `tsc` or `nodemon`, then open a live server.",
+  "type": "module",
   "main": "index.js",
   "dependencies": {
+    "@types/express": "^4.17.11",
+    "@types/socket.io": "^2.1.13",
+    "express": "^4.17.1",
     "http-server": "^0.12.3",
-    "pixi.js": "^6.0.1"
+    "pixi.js": "^6.0.1",
+    "socket.io": "^4.0.1"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.21.0",
@@ -16,7 +21,7 @@
     "typescript": "^4.2.4"
   },
   "scripts": {
-    "start": "tsc && http-server",
+    "start": "tsc && node js-script/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

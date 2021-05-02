@@ -325,10 +325,11 @@ export class Game {
             Math.sin(direction) * (unit.unitSize + another.unitSize)/2;
             const yDiff = - (unit.y - another.y) +
             Math.cos(direction) * (unit.unitSize + another.unitSize)/2;
-            unit.x += xDiff/2;
-            unit.y += yDiff/2;
-            another.x -= xDiff/2;
-            another.y -= yDiff/2;
+            const unitWeightProp = unit.weight / (unit.weight + another.weight);
+            unit.x += xDiff * (1-unitWeightProp);
+            unit.y += yDiff * (1-unitWeightProp);
+            another.x -= xDiff * unitWeightProp;
+            another.y -= yDiff * unitWeightProp;
         }
     }
 

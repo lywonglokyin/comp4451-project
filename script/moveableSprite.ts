@@ -118,9 +118,17 @@ export class MovableSprite extends PIXI.Sprite {
             return;
         }
         this.x += this.shiftX;
-        this.shiftX *= 0.7;
+        if (this.shiftX <= 10 && this.shiftX >= -10) {
+            this.shiftX = 0;
+        } else {
+            this.shiftX += this.shiftX > 0 ? -10 : 10;
+        }
         this.y += this.shiftY;
-        this.shiftY *= 0.7;
+        if (this.shiftY <= 10 && this.shiftY >= -10) {
+            this.shiftY = 0;
+        } else {
+            this.shiftY += this.shiftY > 0 ? -10 : 10;
+        }
         --this.shiftCounter;
     }
 }
