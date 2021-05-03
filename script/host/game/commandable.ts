@@ -1,23 +1,21 @@
-import {Sprite, Texture} from 'pixi.js';
-import {MovableSprite} from './moveableSprite.js';
-import {Player} from './host/game/player.js';
-import {angleToAnother, fmod} from './utils.js';
+import {Movable} from './movable.js';
+import {Player} from './player.js';
+import {angleToAnother, fmod} from '../../utils.js';
 
-export class CommandableSprite extends MovableSprite {
+export class Commandable extends Movable {
     hasTarget: boolean = false;
     needAlign: boolean = false; // True when this sprite need direction adjustment at its final position.
     targetX: number = 0;
     targetY: number = 0;
     targetDirection: number = 0; // Which direction the spirte should face at the final position.
-    targetSprite: Sprite|null = null;
     safeDistance: number; // The distance from which the object need to decel
 
     readonly DIRECTION_TORLERANCE: number = 0.05;
 
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
         unitSize:number, weight: number, hp: number, attack: number, player: Player,
-        attackCooldown: number, id: number, texture?: Texture) {
-        super(turningSpeed, maxSpeed, accel, decel, unitSize, weight, hp, attack, player, attackCooldown, id, texture);
+        attackCooldown: number) {
+        super(turningSpeed, maxSpeed, accel, decel, unitSize, weight, hp, attack, player, attackCooldown);
         this.safeDistance = this.maxSpeed**2 / 2 / this.decel;
     }
 
@@ -66,10 +64,6 @@ export class CommandableSprite extends MovableSprite {
         if (targetDistance < distanceTolerance) {
             this.speed = 0;
             this.hasTarget = false;
-            if (this.targetSprite !== null) {
-                this.targetSprite.destroy();
-                this.targetSprite = null;
-            }
             return;
         }
         if (directionDiff > (Math.PI / 2)) {
@@ -99,27 +93,5 @@ export class CommandableSprite extends MovableSprite {
 
     public directionToTarget: ()=>number = ()=>{
         return angleToAnother(this.x, this.y, this.targetX, this.targetY);
-    }
-
-    public setTargetSprite(sprite: Sprite): void {
-        if (this.targetSprite !== null) {
-            this.targetSprite.destroy();
-        }
-        this.targetSprite = sprite;
-    }
-
-    public getTargetSprite(): Sprite {
-        if (this.targetSprite === null) {
-            throw Error('Target sprite not found for this object!');
-        }
-        return this.targetSprite;
-    }
-
-    public updateShadowSprite() {
-        if (this.targetSprite !== null) {
-            this.targetSprite.x = this.targetX;
-            this.targetSprite.y = this.targetY;
-            this.targetSprite.rotation = this.targetDirection;
-        }
     }
 }

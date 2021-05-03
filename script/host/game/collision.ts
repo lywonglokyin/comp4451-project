@@ -1,17 +1,17 @@
 import {Game} from './game.js';
-import {MovableSprite} from './moveableSprite.js';
-import {euclideanDist} from './utils.js';
+import {Movable} from './movable.js';
+import {euclideanDist} from '../../utils.js';
 
 
 export class CollisionHandler {
-    units: MovableSprite[];
+    units: Movable[];
     game: Game;
 
     hSize: number; // NUmber of horizontal grids
     vSize: number; // Number of vertical grids
     gridSize: number;
 
-    grids: MovableSprite[][][];
+    grids: Movable[][][];
 
     constructor(game: Game, gridSize: number) {
         this.units = [];
@@ -42,14 +42,14 @@ export class CollisionHandler {
         }
     }
 
-    addUnit(unit: MovableSprite): void {
+    addUnit(unit: Movable): void {
         this.units.push(unit);
     }
 
     private initializeEmptyGrid(): void {
-        const grids: MovableSprite[][][] = new Array<MovableSprite[][]>(this.vSize);
+        const grids: Movable[][][] = new Array<Movable[][]>(this.vSize);
         for (let y = 0; y < this.vSize; ++y) {
-            grids[y] = new Array<MovableSprite[]>(this.hSize);
+            grids[y] = new Array<Movable[]>(this.hSize);
             for (let x = 0; x < this.hSize; ++x) {
                 grids[y][x] = [];
             }
@@ -57,13 +57,13 @@ export class CollisionHandler {
         this.grids = grids;
     }
 
-    private addUnitToGrid(unit: MovableSprite): void {
+    private addUnitToGrid(unit: Movable): void {
         const horizontalPos: number = Math.trunc(unit.x / this.gridSize);
         const verticalPos: number = Math.trunc(unit.y / this.gridSize);
         this.grids[verticalPos][horizontalPos].push(unit);
     }
 
-    private checkUnitCollision(unit: MovableSprite, x: number, y:number): void {
+    private checkUnitCollision(unit: Movable, x: number, y:number): void {
         this.grids[y][x].forEach((another)=>{
             if (unit !== another) {
                 if (this.isCollide(unit, another)) {
@@ -89,7 +89,7 @@ export class CollisionHandler {
         }
     }
 
-    private checkUnitCollisionWithGrid(unit: MovableSprite, targetX: number, targetY: number): void {
+    private checkUnitCollisionWithGrid(unit: Movable, targetX: number, targetY: number): void {
         this.grids[targetY][targetX].forEach((another)=>{
             if (this.isCollide(unit, another)) {
                 this.game.collide(unit, another);
@@ -97,7 +97,7 @@ export class CollisionHandler {
         });
     }
 
-    private isCollide(unit: MovableSprite, another: MovableSprite): boolean {
+    private isCollide(unit: Movable, another: Movable): boolean {
         // For now, assume all sprites are circle
         const distance: number = euclideanDist(unit.x, unit.y, another.x, another.y);
         const safeDistance: number = unit.unitSize / 2 + another.unitSize / 2;

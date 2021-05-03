@@ -1,19 +1,13 @@
-import * as pixiNamespace from 'pixi.js';
+import {Commandable} from '../commandable.js';
+import {Player} from '../player.js';
 
-import {CommandableSprite} from '../commandableSprite.js';
-import {Player} from '../host/game/player.js';
-
-declare let PIXI: typeof pixiNamespace;
-
-
-export class Cavalry extends CommandableSprite {
+export class Cavalry extends Commandable {
     static turningSpeed: number = 0.02;
     static maxSpeed: number = 8;
     static accel: number = 0.1;
     static decel: number = 0.08;
-    static readonly assetAddr: string = 'images/testunit3.png';
 
-    constructor(x: number, y: number, player: Player, id: number) {
+    constructor(x: number, y: number, player: Player) {
         super(Cavalry.turningSpeed,
             Cavalry.maxSpeed,
             Cavalry.accel,
@@ -24,9 +18,7 @@ export class Cavalry extends CommandableSprite {
             10, // Unit attack
             player,
             5*60, // Attack cooldown 5 sec
-            id,
-            PIXI.Texture.from(Cavalry.assetAddr));
-        this.anchor.set(0.5);
+        );
         this.x = x;
         this.y = y;
     }

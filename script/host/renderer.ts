@@ -1,38 +1,28 @@
 import * as pixiNamespace from 'pixi.js';
 import {Application, Container, Point, Sprite, Ticker, TilingSprite} from 'pixi.js';
-import {CollisionHandler} from './collision.js';
-import {CommandableSprite} from './commandableSprite.js';
-import {Interaction} from './interactive.js';
-import {MovableSprite} from './moveableSprite.js';
-import {Cavalry} from './units/cavalry.js';
-import {Commander} from './units/commander.js';
-import {Infantry} from './units/infantry.js';
-import {UnitTypes} from './units/unitTypes.js';
-import {Player} from './player.js';
-import {angleToAnother, euclideanDist, fmod} from './utils.js';
+import {CommandableSprite} from '../commandableSprite.js';
+import {MovableSprite} from '../moveableSprite.js';
+import {Cavalry} from '../units/cavalry.js';
+import {Commander} from '../units/commander.js';
+import {Infantry} from '../units/infantry.js';
+import {UnitTypes} from '../units/unitTypes.js';
+import {Player} from './game/player.js';
+import {angleToAnother, euclideanDist, fmod} from '../utils.js';
+import {UnitPosInfo} from './game/game.js';
+import {Socket} from 'socket.io-client';
 
 declare let PIXI: typeof pixiNamespace;
 
-export class Game {
+export class Renderer {
     private state: string = 'play';
     private gameContainer: Container = new PIXI.Container();
 
     gameWidth: number;
     gameHeight: number;
 
-    private gameLeftBound: number;
-    private gameUpBound: number;
-    private gameRightBound: number;
-    private gameDownBound: number;
-    private readonly gameBoundPadding: number = 40;
-
-    private playerOneUnits: CommandableSprite[] = [];
-    private playerTwoUnits: CommandableSprite[] = [];
+    private everyUnits: {[key: number]:CommandableSprite} = {};
 
     private cameraFocus: Sprite|null = null;
-
-    private interaction: Interaction; // Handles I/O.
-    private collisionHandler: CollisionHandler; // Handles collision.
 
     private selectedSprites: CommandableSprite[] = []; // This array should remain sorted according to x position.
     private selectedSpritesSet: Set<CommandableSprite> = new Set();
@@ -41,48 +31,67 @@ export class Game {
 
     readonly mapTileAsset: string = 'images/tiles.png'
 
+    app: Application;
+
+    player: Player = Player.One;
+
     constructor(width: number, height: number, app: Application) {
         this.gameWidth = width;
         this.gameHeight = height;
         const mapSprite: TilingSprite = new PIXI.TilingSprite(PIXI.Texture.from(this.mapTileAsset), width, height);
         this.gameContainer.addChild(mapSprite);
 
-        this.interaction = new Interaction(this, app);
-        this.collisionHandler = new CollisionHandler(this, 100);
+        this.app = app;
 
-        this.gameLeftBound = this.gameBoundPadding;
-        this.gameUpBound = this.gameBoundPadding;
-        this.gameRightBound = width - this.gameBoundPadding;
-        this.gameDownBound = height - this.gameBoundPadding;
+        this.app.stage.addChild(this.gameContainer);
+        this.gameContainer.position.x = this.app.renderer.width/2;
+        this.gameContainer.position.y = this.app.renderer.height/2;
     }
 
-    public addUnit(x: number, y: number,
-        unitType: UnitTypes, commandable:boolean = true, player: Player = Player.One): CommandableSprite {
-        const localPos = this.gameContainer.toLocal(new PIXI.Point(x, y));
+    public addUnit(unitID: number, unitType: UnitTypes, player: Player): CommandableSprite {
+        const localPos = this.gameContainer.toLocal(new PIXI.Point(0, 0));
         let unit: CommandableSprite;
         if (unitType == UnitTypes.Commander) {
-            unit = new Commander(localPos.x, localPos.y, player);
+            unit = new Commander(localPos.x, localPos.y, player, unitID);
         } else if (unitType == UnitTypes.Infantry) {
-            unit = new Infantry(localPos.x, localPos.y, player);
+            unit = new Infantry(localPos.x, localPos.y, player, unitID);
         } else if (unitType == UnitTypes.Cavalry) {
-            unit = new Cavalry(localPos.x, localPos.y, player);
+            unit = new Cavalry(localPos.x, localPos.y, player, unitID);
         } else {
             throw new Error('Unexpected unit type!');
         }
-
-        if (commandable) {
+        if (this.player == player) {
             unit.interactive = true;
-            this.interaction.bindCommandable(unit);
+
+            if (unitType == UnitTypes.Commander) {
+                this.fixCamera(unit);
+            }
         }
+        unit.anchor.set(0.5);
 
         this.gameContainer.addChild(unit);
-        if (player==0) {
-            this.playerOneUnits.push(unit);
-        } else {
-            this.playerTwoUnits.push(unit);
-        }
-        this.collisionHandler.addUnit(unit);
+        this.everyUnits[unitID] = unit;
         return unit;
+    }
+
+    public updatePos(posBulk: {[key: number]: UnitPosInfo}) {
+        // const localPos = this.gameContainer.toLocal(new PIXI.Point(x, y));
+        for (const [key, value] of Object.entries(posBulk)) {
+            const intKey = parseInt(key);
+            const unit = this.everyUnits[intKey];
+            unit.x = value.x;
+            unit.y = value.y;
+            unit.rotation = value.rotation;
+
+            if (unit.targetSprite !== null) {
+                const targetDistance = euclideanDist(value.x, value.y, unit.targetSprite.x, unit.targetSprite.y);
+                const distanceTolerance = 4;
+                if (targetDistance < distanceTolerance) {
+                    unit.targetSprite.destroy();
+                    unit.targetSprite = null;
+                }
+            }
+        }
     }
 
     public addSelectedSprite(sprite: CommandableSprite): void {
@@ -189,11 +198,15 @@ export class Game {
         }
     }
 
-    public setSelectedSpriteTarget() {
+    public setSelectedSpriteTarget(socket: Socket) {
         this.selectedSprites.forEach((sprite)=>{
             sprite.hasTarget = true;
             sprite.needAlign = true;
+
+
+            socket.emit('updateTargetPos', sprite.id, sprite.targetX, sprite.targetY, sprite.targetDirection);
         });
+
         this.deselectSprite();
     }
 
@@ -205,47 +218,10 @@ export class Game {
         return unit.hp >= 0;
     }
 
-    public destroyUnit(unit: MovableSprite): void {
-        let unitList: MovableSprite[] = [];
-        if (unit.player === Player.One) {
-            unitList = this.playerOneUnits;
-        } else if (unit.player === Player.Two) {
-            unitList = this.playerTwoUnits;
-        }
-        let unitIndex = unitList.indexOf(unit, 0);
-        unitList.splice(unitIndex, 1);
-        unitIndex = this.collisionHandler.units.indexOf(unit, 0);
-        this.collisionHandler.units.splice(unitIndex, 1);
-        for (let i=0; i<this.selectedSprites.length; ++i) {
-            if (unit === this.selectedSprites[i]) {
-                this.selectedSprites.splice(i, 1);
-                break;
-            }
-        }
-        unit.destroy();
-    }
-
-    private checkBoundAndEnforce(unit: CommandableSprite) {
-        if (unit.x < this.gameLeftBound) {
-            unit.x = this.gameLeftBound;
-        } else if (unit.x > this.gameRightBound) {
-            unit.x = this.gameRightBound;
-        }
-        if (unit.y < this.gameUpBound) {
-            unit.y = this.gameUpBound;
-        } else if (unit.y > this.gameDownBound) {
-            unit.y = this.gameDownBound;
-        }
-    }
-
     public showGame(app: Application) {
         app.stage.addChild(this.gameContainer);
         this.gameContainer.position.x = app.renderer.width/2;
         this.gameContainer.position.y = app.renderer.height/2;
-    }
-
-    public attachGameLoop(ticker: Ticker) {
-        ticker.add(this.gameLoop);
     }
 
     public fixCamera(sprite: Sprite) {
@@ -262,83 +238,33 @@ export class Game {
         this.gameContainer.scale.y *= 0.99;
     }
 
-    private gameLoop = ()=> {
-        if (this.cameraFocus !== null) {
-            this.gameContainer.pivot.x = this.cameraFocus.x;
-            this.gameContainer.pivot.y = this.cameraFocus.y;
-        }
-        this.playerOneUnits.concat(this.playerTwoUnits).forEach((unit)=>{
-            unit.act();
-            this.checkBoundAndEnforce(unit);
-        });
-        this.collisionHandler.detectCollisions();
-        // Units health check.
-        this.playerOneUnits.concat(this.playerTwoUnits).forEach((unit)=>{
-            if (!this.isHealthy(unit)) {
-                this.destroyUnit(unit);
-            }
-        });
-        // Check bound after collision
-        this.playerOneUnits.concat(this.playerTwoUnits).forEach((unit)=>{
-            this.checkBoundAndEnforce(unit);
-        });
-    }
-
-
-    public collide(unit: MovableSprite, another: MovableSprite) {
-        // Include actions to handle after collision occured
-        const distance = euclideanDist(unit.x, unit.y, another.x, another.y);
-        if (unit.player === another.player) {
-            unit.limitSpeed();
-            another.limitSpeed();
-            const xDisplacement = (unit.x - another.x) / distance / 10;
-            const yDisplacement = (unit.y - another.y) / distance / 10;
-            unit.x += xDisplacement;
-            unit.y += yDisplacement;
-            another.x -= xDisplacement;
-            another.y -= yDisplacement;
-        } else {
-            const direction = angleToAnother(unit.x, unit.y, another.x, another.y);
-
-            if (unit.canAttack()) {
-                const angleAlignment = Math.cos(direction - unit.rotation);
-                if (angleAlignment > 0) {
-                    const impulse = angleAlignment * unit.weight * unit.speed;
-                    const damage = this.calcDamage(unit.attackStat, unit.speed);
-                    console.log('unit', direction, unit.rotation, angleAlignment, impulse, damage);
-                    another.applyDamage(direction, impulse, damage);
-                    unit.attack();
-                }
-            }
-            if (another.canAttack()) {
-                const angleAlignment = Math.cos((direction+Math.PI) - another.rotation);
-                if (angleAlignment>0) {
-                    const impulse = angleAlignment * another.weight * another.speed;
-                    const damage = this.calcDamage(another.attackStat, another.speed);
-                    console.log('another', direction, another.rotation, angleAlignment, impulse, damage);
-                    unit.applyDamage(direction + Math.PI, impulse, damage);
-                    another.attack();
-                }
-            }
-
-            const xDiff = - (unit.x - another.x) -
-            Math.sin(direction) * (unit.unitSize + another.unitSize)/2;
-            const yDiff = - (unit.y - another.y) +
-            Math.cos(direction) * (unit.unitSize + another.unitSize)/2;
-            const unitWeightProp = unit.weight / (unit.weight + another.weight);
-            unit.x += xDiff * (1-unitWeightProp);
-            unit.y += yDiff * (1-unitWeightProp);
-            another.x -= xDiff * unitWeightProp;
-            another.y -= yDiff * unitWeightProp;
-        }
-    }
-
     private calcDamage(attackStat: number, unitSpeed: number): number {
         const speedAttenuation = unitSpeed<2 ? 1 : (unitSpeed**2 / 30 +1);
         return attackStat * speedAttenuation;
     }
 
-    public getInteractionObject(): Interaction {
-        return this.interaction;
+    public render= () => {
+        if (this.cameraFocus !== null) {
+            this.gameContainer.pivot.x = this.cameraFocus.x;
+            this.gameContainer.pivot.y = this.cameraFocus.y;
+        }
+    }
+
+    public setPlayer(player: Player) {
+        this.player = player;
+    }
+
+    public getLocalPos(x: number, y:number): Point {
+        const localClickPos: Point = new PIXI.Point(x, y);
+        return this.gameContainer.toLocal(localClickPos);
+    }
+
+    public invertView() {
+        this.gameContainer.rotation = Math.PI;
+    }
+
+    public destroyUnit(id: number) {
+        this.everyUnits[id].destroy();
+        delete this.everyUnits[id];
     }
 }

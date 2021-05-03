@@ -1,7 +1,7 @@
 import * as pixiNamespace from 'pixi.js';
 
 import {CommandableSprite} from '../commandableSprite.js';
-import {Player} from '../player.js';
+import {Player} from '../host/game/player.js';
 
 declare let PIXI: typeof pixiNamespace;
 
@@ -14,7 +14,7 @@ export class Infantry extends CommandableSprite {
     static readonly playerOneassetAddr: string = 'images/testunit2.png';
     static readonly playerTwoassetAddr: string = 'images/testunit5.png';
 
-    constructor(x: number, y: number, player: Player) {
+    constructor(x: number, y: number, player: Player, id: number) {
         let assetAddr: string;
         if (player == Player.One) {
             assetAddr = Infantry.playerOneassetAddr;
@@ -31,6 +31,7 @@ export class Infantry extends CommandableSprite {
             10, // Unit attack
             player,
             5*60, // Attack cooldown 5 sec
+            id,
             PIXI.Texture.from(assetAddr));
         this.anchor.set(0.5);
         this.x = x;

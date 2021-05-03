@@ -1,22 +1,23 @@
-import * as pixiNamespace from 'pixi.js';
-import {Application, InteractionEvent, Sprite} from 'pixi.js';
-import {CommandableSprite} from './commandableSprite.js';
+import {Application, InteractionEvent} from 'pixi.js';
+import {Socket} from 'socket.io-client';
+import {CommandableSprite} from '../commandableSprite.js';
 
-import {Game} from './game.js';
-import {KeyboardListener} from './keyboard_listener.js';
-import {MovableSprite} from './moveableSprite.js';
+import {KeyboardListener} from '../keyboard_listener.js';
+import {MovableSprite} from '../moveableSprite.js';
+import {Renderer} from './renderer.js';
 
-declare let PIXI: typeof pixiNamespace;
 
 export class Interaction {
     app: Application;
-    game: Game;
+    renderer: Renderer;
+    socket: Socket;
 
     isRightClickDown: boolean = false;
 
-    constructor(game: Game, app: Application) {
+    constructor(renderer: Renderer, app: Application, socket: Socket) {
         this.app = app;
-        this.game = game;
+        this.renderer = renderer;
+        this.socket = socket;
 
         this.bindRightClickMove();
         this.bindCameraZoom();
@@ -25,32 +26,56 @@ export class Interaction {
 
     public bindMovementControl(sprite: MovableSprite) {
         const downKeyListener = new KeyboardListener('ArrowDown');
+        let downKeyInterval: ReturnType<typeof setInterval>|null = null;
         downKeyListener.pressed = (()=>{
-            this.app.ticker.add(sprite.decSpeed);
+            downKeyInterval = setInterval(()=>{
+                this.socket.emit('decSpeed', sprite.id);
+            }, 1000/60);
         });
         downKeyListener.released = (()=>{
-            this.app.ticker.remove(sprite.decSpeed);
+            if (downKeyInterval!==null) {
+                clearInterval(downKeyInterval);
+                downKeyInterval = null;
+            }
         });
         const upKeyListener = new KeyboardListener('ArrowUp');
+        let upKeyInterval: ReturnType<typeof setInterval>|null = null;
         upKeyListener.pressed = (()=>{
-            this.app.ticker.add(sprite.incSpeed);
+            upKeyInterval = setInterval(()=>{
+                this.socket.emit('incSpeed', sprite.id);
+            }, 1000/60);
         });
         upKeyListener.released = (()=>{
-            this.app.ticker.remove(sprite.incSpeed);
+            if (upKeyInterval!==null) {
+                clearInterval(upKeyInterval);
+                upKeyInterval = null;
+            }
         });
         const leftKeyListener = new KeyboardListener('ArrowLeft');
+        let leftKeyInterval: ReturnType<typeof setInterval>|null = null;
         leftKeyListener.pressed = (()=>{
-            this.app.ticker.add(sprite.turnLeft);
+            leftKeyInterval = setInterval(()=>{
+                this.socket.emit('turnLeft', sprite.id);
+            }, 1000/60);
         });
         leftKeyListener.released = (()=>{
-            this.app.ticker.remove(sprite.turnLeft);
+            if (leftKeyInterval!==null) {
+                clearInterval(leftKeyInterval);
+                leftKeyInterval = null;
+            }
         });
         const rightKeyListener = new KeyboardListener('ArrowRight');
+        let rightKeyInterval: ReturnType<typeof setInterval>|null = null;
         rightKeyListener.pressed = (()=>{
-            this.app.ticker.add(sprite.turnRight);
+            rightKeyInterval = setInterval(()=>{
+                this.socket.emit('turnRight', sprite.id);
+            }, 1000/60);
         });
         rightKeyListener.released = (()=>{
-            this.app.ticker.remove(sprite.turnRight);
+            if (rightKeyInterval!==null) {
+                clearInterval(rightKeyInterval);
+                rightKeyInterval = null;
+            }
         });
     }
 
@@ -59,7 +84,7 @@ export class Interaction {
             const originalEvent = <MouseEvent>e.data.originalEvent;
             console.log(originalEvent.button);
             const targetSprite = e.target! as unknown as CommandableSprite;
-            this.game.addSelectedSprite(targetSprite);
+            this.renderer.addSelectedSprite(targetSprite);
             e.stopPropagation();
         });
     }
@@ -70,18 +95,19 @@ export class Interaction {
                 this.isRightClickDown = true;
                 const targetX: number = e.clientX;
                 const targetY: number = e.clientY;
-                this.game.addShadowSprite(targetX, targetY);
+                this.renderer.addShadowSprite(targetX, targetY);
             }
         });
         this.app.view.addEventListener('mousemove', (e: MouseEvent)=>{
             if (this.isRightClickDown) {
                 const targetX: number = e.clientX;
                 const targetY: number = e.clientY;
-                this.game.shadowSpriteDrag(targetX, targetY);
+                this.renderer.shadowSpriteDrag(targetX, targetY);
             }
         });
         this.app.view.addEventListener('contextmenu', () => {
-            this.game.setSelectedSpriteTarget();
+            this.renderer.setSelectedSpriteTarget(this.socket);
+
             this.isRightClickDown = false;
         });
     }
@@ -90,9 +116,9 @@ export class Interaction {
         this.app.view.addEventListener('wheel', (e: WheelEvent)=>{
             const isScrollUp: boolean = e.deltaY < 0;
             if (isScrollUp) {
-                this.game.zoomIn();
+                this.renderer.zoomIn();
             } else {
-                this.game.zoomOut();
+                this.renderer.zoomOut();
             }
         });
     }
@@ -100,7 +126,7 @@ export class Interaction {
     public bindDeselectSprite() {
         this.app.stage.interactive = true;
         this.app.stage.on('mousedown', ()=>{
-            this.game.deselectSprite();
+            this.renderer.deselectSprite();
         });
     }
 }

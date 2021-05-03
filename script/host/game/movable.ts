@@ -1,10 +1,13 @@
-import * as pixiNamespace from 'pixi.js';
-import {Texture} from 'pixi.js';
-import {Player} from './host/game/player.js';
+import {Player} from './player';
 
-declare let PIXI: typeof pixiNamespace;
 
-export class MovableSprite extends PIXI.Sprite {
+export class Movable {
+    id: number;
+
+    x: number = 0;
+    y: number = 0;
+    rotation: number = 0;
+
     turningSpeed: number;
     speed: number = 0;
     maxSpeed: number;
@@ -14,7 +17,7 @@ export class MovableSprite extends PIXI.Sprite {
     weight: number; // Weight of the unit, affect the movement after collision.
     private needShift: boolean = false; // If true, the unit would be shifted due to being attacked.
     private static readonly SHIFT_COUNTER_MAX = 60; // Countdown from the shift animation. Default to be 60 ticks (1sec)
-    private shiftCounter: number = MovableSprite.SHIFT_COUNTER_MAX; // A countdown for the shift animation.
+    private shiftCounter: number = Movable.SHIFT_COUNTER_MAX; // A countdown for the shift animation.
     private shiftX: number = 0; // The shift in X for each tick.
     private shiftY: number = 0; // The shift in Y for ecah tick.
 
@@ -25,14 +28,13 @@ export class MovableSprite extends PIXI.Sprite {
 
     player: Player;
 
-    id:number;
-
     unitSize: number; // For now, it is assumed diameter of circle, this is used for collsion detection only
 
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
         unitSize: number, weight: number, hp: number, attack: number, player: Player,
-        attackCooldown: number, id: number, texture?: Texture) {
-        super(texture);
+        attackCooldown: number) {
+        this.id = Math.random()*1000000000|0;
+
         this.turningSpeed = turningSpeed;
         this.maxSpeed = maxSpeed;
         this.accel = accel;
@@ -45,7 +47,6 @@ export class MovableSprite extends PIXI.Sprite {
         this.MAX_ATTACK_COOLDOWN = attackCooldown;
 
         this.player = player;
-        this.id = id;
     }
 
     public turnLeft: ()=>void = ()=>{
@@ -117,7 +118,7 @@ export class MovableSprite extends PIXI.Sprite {
     private shift(): void {
         if (this.shiftCounter == 0) {
             this.needShift = false;
-            this.shiftCounter = MovableSprite.SHIFT_COUNTER_MAX;
+            this.shiftCounter = Movable.SHIFT_COUNTER_MAX;
             return;
         }
         this.x += this.shiftX;
