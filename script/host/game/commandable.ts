@@ -12,6 +12,8 @@ export class Commandable extends Movable {
 
     readonly DIRECTION_TORLERANCE: number = 0.05;
 
+    ai: boolean = true;
+
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
         unitSize:number, weight: number, hp: number, attack: number, player: Player,
         attackCooldown: number) {
@@ -20,13 +22,17 @@ export class Commandable extends Movable {
     }
 
     public move() {
-        if (this.hasTarget) {
-            const directionDiff = this.alignDirection(this.directionToTarget());
-            this.adjustSpeed(directionDiff);
-        } else if (this.needAlign) {
-            const directionDiff = this.alignDirection(this.targetDirection);
-            if (directionDiff < this.DIRECTION_TORLERANCE) {
-                this.needAlign = false;
+        if (this.ai) {
+            if (this.hasTarget) {
+                const directionDiff = this.alignDirection(this.directionToTarget());
+                this.adjustSpeed(directionDiff);
+            } else if (this.needAlign) {
+                const directionDiff = this.alignDirection(this.targetDirection);
+                if (directionDiff < this.DIRECTION_TORLERANCE) {
+                    this.needAlign = false;
+                }
+            } else if (this.hasHostile) {
+                this.alignDirection(this.hostileDirection);
             }
         }
         super.move();

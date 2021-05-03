@@ -26,6 +26,9 @@ export class Movable {
     private attackCooldown: number = 0;
     private readonly MAX_ATTACK_COOLDOWN: number;
 
+    hasHostile: boolean = false;
+    hostileDirection: number = 0;
+
     player: Player;
 
     unitSize: number; // For now, it is assumed diameter of circle, this is used for collsion detection only
@@ -113,6 +116,9 @@ export class Movable {
         this.shiftX = Math.sin(direction)* impulse / this.weight;
         this.shiftY = -Math.cos(direction) * impulse / this.weight;
         this.needShift = true;
+
+        this.hasHostile = true;
+        this.hostileDirection = direction + Math.PI;
     }
 
     private shift(): void {
@@ -134,5 +140,12 @@ export class Movable {
             this.shiftY += this.shiftY > 0 ? -10 : 10;
         }
         --this.shiftCounter;
+    }
+
+    public hasEnemy(direction:number) {
+        if (!this.hasHostile) {
+            this.hasHostile = true;
+            this.hostileDirection = direction;
+        }
     }
 }

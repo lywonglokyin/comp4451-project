@@ -63,6 +63,7 @@ export class Game {
         let unit: Commandable;
         if (unitType == UnitTypes.Commander) {
             unit = new Commander(x, y, player);
+            unit.ai = false;
         } else if (unitType == UnitTypes.Infantry) {
             unit = new Infantry(x, y, player);
         } else if (unitType == UnitTypes.Cavalry) {
@@ -170,7 +171,8 @@ export class Game {
             another.y -= yDisplacement;
         } else {
             const direction = angleToAnother(unit.x, unit.y, another.x, another.y);
-
+            unit.hasEnemy(direction);
+            another.hasEnemy(direction+Math.PI);
             if (unit.canAttack()) {
                 const angleAlignment = Math.cos(direction - unit.rotation);
                 if (angleAlignment > 0) {
