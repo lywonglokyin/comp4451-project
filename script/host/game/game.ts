@@ -8,6 +8,7 @@ import {angleToAnother, euclideanDist, fmod} from '../../utils.js';
 import {Commandable} from './commandable.js';
 import {Movable} from './movable.js';
 import {Server, Socket} from 'socket.io';
+import {io} from 'socket.io-client';
 
 
 export interface UnitPosInfo{
@@ -175,8 +176,8 @@ export class Game {
                 if (angleAlignment > 0) {
                     const impulse = angleAlignment * unit.weight * unit.speed;
                     const damage = this.calcDamage(unit.attackStat, unit.speed);
-                    console.log('unit', direction, unit.rotation, angleAlignment, impulse, damage);
                     another.applyDamage(direction, impulse, damage);
+                    this.server.to(this.gameID).emit('applyDamage', another.id);
                     unit.attack();
                 }
             }
@@ -185,8 +186,8 @@ export class Game {
                 if (angleAlignment>0) {
                     const impulse = angleAlignment * another.weight * another.speed;
                     const damage = this.calcDamage(another.attackStat, another.speed);
-                    console.log('another', direction, another.rotation, angleAlignment, impulse, damage);
                     unit.applyDamage(direction + Math.PI, impulse, damage);
+                    this.server.to(this.gameID).emit('applyDamage', unit.id);
                     another.attack();
                 }
             }

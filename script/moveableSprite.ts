@@ -1,6 +1,7 @@
 import * as pixiNamespace from 'pixi.js';
 import {Texture} from 'pixi.js';
 import {Player} from './host/game/player.js';
+import {UnitTypes} from './host/game/units/unitTypes.js';
 
 declare let PIXI: typeof pixiNamespace;
 
@@ -24,6 +25,7 @@ export class MovableSprite extends PIXI.Sprite {
     private readonly MAX_ATTACK_COOLDOWN: number;
 
     player: Player;
+    type: UnitTypes;
 
     id:number;
 
@@ -31,7 +33,7 @@ export class MovableSprite extends PIXI.Sprite {
 
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
         unitSize: number, weight: number, hp: number, attack: number, player: Player,
-        attackCooldown: number, id: number, texture?: Texture) {
+        attackCooldown: number, id: number, type: UnitTypes, texture?: Texture) {
         super(texture);
         this.turningSpeed = turningSpeed;
         this.maxSpeed = maxSpeed;
@@ -45,6 +47,7 @@ export class MovableSprite extends PIXI.Sprite {
         this.MAX_ATTACK_COOLDOWN = attackCooldown;
 
         this.player = player;
+        this.type = type;
         this.id = id;
     }
 

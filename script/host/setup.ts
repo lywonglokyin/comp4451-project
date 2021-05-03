@@ -88,6 +88,10 @@ socket.on('destroyUnit', (id: number)=>{
     renderer.destroyUnit(id);
 });
 
+socket.on('applyDamage', (id: number)=>{
+    renderer.applyDamage(id);
+});
+
 
 hostButton.addEventListener('click', ()=>{
     hostNewGame();

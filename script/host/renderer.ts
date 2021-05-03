@@ -1,5 +1,5 @@
 import * as pixiNamespace from 'pixi.js';
-import {Application, Container, Point, Sprite, Ticker, TilingSprite} from 'pixi.js';
+import {Application, Container, Graphics, Point, Sprite, Ticker, TilingSprite} from 'pixi.js';
 import {CommandableSprite} from '../commandableSprite.js';
 import {MovableSprite} from '../moveableSprite.js';
 import {Cavalry} from '../units/cavalry.js';
@@ -24,6 +24,8 @@ export class Renderer {
 
     private cameraFocus: Sprite|null = null;
 
+
+    private dragRectange: Graphics|null = null;
     private selectedSprites: CommandableSprite[] = []; // This array should remain sorted according to x position.
     private selectedSpritesSet: Set<CommandableSprite> = new Set();
     private selectedSpritesAnchorX: number = 0;
@@ -34,6 +36,9 @@ export class Renderer {
     app: Application;
 
     player: Player = Player.One;
+
+    hitAudios: HTMLAudioElement[];
+    deadAudios: HTMLAudioElement[];
 
     constructor(width: number, height: number, app: Application) {
         this.gameWidth = width;
@@ -46,6 +51,19 @@ export class Renderer {
         this.app.stage.addChild(this.gameContainer);
         this.gameContainer.position.x = this.app.renderer.width/2;
         this.gameContainer.position.y = this.app.renderer.height/2;
+
+        this.hitAudios = [
+            new Audio('sound/hit1.wav'),
+            new Audio('sound/hit2.wav'),
+            new Audio('sound/hit3.wav'),
+        ];
+        this.hitAudios.forEach((audio)=>{
+            audio.volume = 0.3;
+        });
+        this.deadAudios = [
+            new Audio('sound/dead1.wav'),
+            new Audio('sound/dead2.wav'),
+        ];
     }
 
     public addUnit(unitID: number, unitType: UnitTypes, player: Player): CommandableSprite {
@@ -210,8 +228,55 @@ export class Renderer {
         this.deselectSprite();
     }
 
-    public applyDamage(unit: MovableSprite, direction: number, impulse: number, damage: number): void {
-        unit.applyDamage(direction, impulse, damage);
+    public drawDragRectangle(fromX: number, fromY: number, toX: number, toY: number) {
+        const localClickFrom: Point = new PIXI.Point(fromX, fromY);
+        const localFrom: Point = this.gameContainer.toLocal(localClickFrom);
+        const localClickTo: Point = new PIXI.Point(toX, toY);
+        const localTo: Point = this.gameContainer.toLocal(localClickTo);
+        const leftX = Math.min(localFrom.x, localTo.x);
+        const rightX = Math.max(localFrom.x, localTo.x);
+        const upY = Math.min(localFrom.y, localTo.y);
+        const downY = Math.max(localFrom.y, localTo.y);
+        if (this.dragRectange !== null) {
+            this.dragRectange.destroy();
+        }
+        const newRectange: Graphics = new PIXI.Graphics();
+        newRectange.lineStyle(2, 0xEEEEEE, 1);
+        newRectange.beginFill(0xFFFFFF, 0);
+        newRectange.drawRect(leftX, upY, rightX-leftX, downY-upY);
+        newRectange.endFill();
+        this.dragRectange = newRectange;
+        this.gameContainer.addChild(newRectange);
+    };
+
+    public removeDragRectangle() {
+        if (this.dragRectange !== null) {
+            this.dragRectange.destroy();
+        }
+        this.dragRectange = null;
+    }
+
+    public selectUnitsWithBox(fromX: number, fromY: number, toX: number, toY: number) {
+        const localClickFrom: Point = new PIXI.Point(fromX, fromY);
+        const localFrom: Point = this.gameContainer.toLocal(localClickFrom);
+        const localClickTo: Point = new PIXI.Point(toX, toY);
+        const localTo: Point = this.gameContainer.toLocal(localClickTo);
+
+        const leftX = Math.min(localFrom.x, localTo.x);
+        const rightX = Math.max(localFrom.x, localTo.x);
+        const upY = Math.min(localFrom.y, localTo.y);
+        const downY = Math.max(localFrom.y, localTo.y);
+
+        for (const [key, value] of Object.entries(this.everyUnits)) {
+            const unit = value;
+            if (unit.player === this.player && unit.type !== UnitTypes.Commander) {
+                if (unit.x <= rightX && unit.x >= leftX) {
+                    if (unit.y <= downY && unit.y >= upY) {
+                        this.addSelectedSprite(unit);
+                    }
+                }
+            }
+        }
     }
 
     public isHealthy(unit: MovableSprite): boolean {
@@ -266,5 +331,30 @@ export class Renderer {
     public destroyUnit(id: number) {
         this.everyUnits[id].destroy();
         delete this.everyUnits[id];
+        const randomAudio = this.deadAudios[Math.floor(Math.random() * this.deadAudios.length)];
+        randomAudio.play();
+    }
+
+    public applyDamage(id: number) {
+        if (id in this.everyUnits) {
+            this.everyUnits[id].tint = 0xFF0000;
+            setTimeout(()=>{
+                if (id in this.everyUnits) {
+                    this.everyUnits[id].tint = 0xFFAAAA;
+                    setTimeout(()=>{
+                        if (id in this.everyUnits) {
+                            this.everyUnits[id].tint = 0xFFCCCC;
+                            setTimeout(()=>{
+                                if (id in this.everyUnits) {
+                                    this.everyUnits[id].tint = 0xFFFFFF;
+                                }
+                            }, 100);
+                        }
+                    }, 100);
+                }
+            }, 100);
+        }
+        const randomAudio = this.hitAudios[Math.floor(Math.random() * this.hitAudios.length)];
+        randomAudio.play();
     }
 }

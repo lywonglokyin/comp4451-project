@@ -2,6 +2,7 @@ import * as pixiNamespace from 'pixi.js';
 
 import {CommandableSprite} from '../commandableSprite.js';
 import {Player} from '../host/game/player.js';
+import {UnitTypes} from '../host/game/units/unitTypes.js';
 
 declare let PIXI: typeof pixiNamespace;
 
@@ -32,6 +33,7 @@ export class Infantry extends CommandableSprite {
             player,
             5*60, // Attack cooldown 5 sec
             id,
+            UnitTypes.Infantry,
             PIXI.Texture.from(assetAddr));
         this.anchor.set(0.5);
         this.x = x;

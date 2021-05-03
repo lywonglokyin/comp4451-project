@@ -2,6 +2,7 @@ import {Sprite, Texture} from 'pixi.js';
 import {MovableSprite} from './moveableSprite.js';
 import {Player} from './host/game/player.js';
 import {angleToAnother, fmod} from './utils.js';
+import {UnitTypes} from './host/game/units/unitTypes.js';
 
 export class CommandableSprite extends MovableSprite {
     hasTarget: boolean = false;
@@ -16,8 +17,9 @@ export class CommandableSprite extends MovableSprite {
 
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
         unitSize:number, weight: number, hp: number, attack: number, player: Player,
-        attackCooldown: number, id: number, texture?: Texture) {
-        super(turningSpeed, maxSpeed, accel, decel, unitSize, weight, hp, attack, player, attackCooldown, id, texture);
+        attackCooldown: number, id: number, type: UnitTypes, texture?: Texture) {
+        super(turningSpeed, maxSpeed, accel, decel, unitSize, weight, hp, attack, player,
+            attackCooldown, id, type, texture);
         this.safeDistance = this.maxSpeed**2 / 2 / this.decel;
     }
 

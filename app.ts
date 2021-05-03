@@ -14,6 +14,7 @@ const __dirname = dirname(__filename);
 
 app.use('/js-script', express.static('js-script'));
 app.use('/images', express.static('images'));
+app.use('/sound', express.static('sound'));
 
 app.get('/', (req, res)=>{
     res.redirect('/host.html');
@@ -61,13 +62,25 @@ io.sockets.on('connection', (socket)=>{
         io.to(clientsArray[1]).emit('startGame', gameID, Player.Two);
         const game = new Game(3000, 6000, io, gameID);
         globalGame = game;
-        const commander = game.addUnit(0, 3700, UnitTypes.Commander);
-        const enemyCommander = game.addUnit(0, 2300, UnitTypes.Commander, Player.Two);
+        const commander = game.addUnit(1500, 3700, UnitTypes.Commander);
+        const enemyCommander = game.addUnit(1500, 2300, UnitTypes.Commander, Player.Two);
         for (let x=800; x<=2400; x+=100) {
             game.addUnit(x, 3500, UnitTypes.Infantry);
         }
+        for (let x=800; x<=1200; x+=100) {
+            game.addUnit(x, 3700, UnitTypes.Cavalry);
+        }
+        for (let x=2000; x<=2400; x+=100) {
+            game.addUnit(x, 3700, UnitTypes.Cavalry);
+        }
         for (let x=800; x<=2400; x+=100) {
             game.addUnit(x, 2500, UnitTypes.Infantry, Player.Two);
+        }
+        for (let x=800; x<=1200; x+=100) {
+            game.addUnit(x, 2300, UnitTypes.Cavalry, Player.Two);
+        }
+        for (let x=2000; x<=2400; x+=100) {
+            game.addUnit(x, 2300, UnitTypes.Cavalry, Player.Two);
         }
         setInterval(game.gameLoop, 1000/60);
     });

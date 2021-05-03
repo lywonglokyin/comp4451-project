@@ -12,6 +12,12 @@ export class Interaction {
     renderer: Renderer;
     socket: Socket;
 
+    private leftMouseDragFromX: number = 0;
+    private leftMouseDragFromY: number = 0;
+    private leftMouseDragToX: number = 0;
+    private leftMouseDragToY: number = 0;
+    private isLeftClickDown: boolean = false;
+
     isRightClickDown: boolean = false;
 
     constructor(renderer: Renderer, app: Application, socket: Socket) {
@@ -21,7 +27,7 @@ export class Interaction {
 
         this.bindRightClickMove();
         this.bindCameraZoom();
-        this.bindDeselectSprite();
+        this.bindLeftMouseDrag();
     }
 
     public bindMovementControl(sprite: MovableSprite) {
@@ -89,6 +95,34 @@ export class Interaction {
         });
     }
 
+    public bindLeftMouseDrag() {
+        this.app.view.addEventListener('mousedown', (e: MouseEvent)=>{
+            console.log('Mouse down!', e.button);
+            if (e.button === 0) {
+                this.renderer.deselectSprite();
+                this.leftMouseDragFromX = e.clientX;
+                this.leftMouseDragFromY = e.clientY;
+                this.isLeftClickDown = true;
+            }
+        });
+        this.app.view.addEventListener('mousemove', (e:MouseEvent)=>{
+            if (this.isLeftClickDown) {
+                this.leftMouseDragToX = e.clientX;
+                this.leftMouseDragToY = e.clientY;
+                this.renderer.drawDragRectangle(this.leftMouseDragFromX, this.leftMouseDragFromY,
+                    this.leftMouseDragToX, this.leftMouseDragToY);
+            }
+        });
+        this.app.view.addEventListener('mouseup', (e: MouseEvent)=>{
+            if (e.button === 0) {
+                this.renderer.removeDragRectangle();
+                this.renderer.selectUnitsWithBox(this.leftMouseDragFromX, this.leftMouseDragFromY,
+                    this.leftMouseDragToX, this.leftMouseDragToY);
+                this.isLeftClickDown = false;
+            }
+        });
+    }
+
     public bindRightClickMove() {
         this.app.view.addEventListener('mousedown', (e: MouseEvent)=>{
             if (e.button === 2) {
@@ -120,13 +154,6 @@ export class Interaction {
             } else {
                 this.renderer.zoomOut();
             }
-        });
-    }
-
-    public bindDeselectSprite() {
-        this.app.stage.interactive = true;
-        this.app.stage.on('mousedown', ()=>{
-            this.renderer.deselectSprite();
         });
     }
 }
