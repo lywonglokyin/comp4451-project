@@ -12,8 +12,11 @@ declare let io: typeof socketClientNamespace.io;
 
 const hostButton = document.getElementById('host')!;
 const joinButton = document.getElementById('join')!;
-const startButton = document.getElementById('start')!;
+const startButton: HTMLButtonElement = <HTMLButtonElement>document.getElementById('start')!;
+startButton.disabled = true;
 const inputField: HTMLInputElement = <HTMLInputElement>document.getElementById('inputGameID')!;
+inputField.value = '';
+const msgDiv: HTMLDivElement = <HTMLDivElement>document.getElementById('msg')!;
 
 const socket = io();
 const app: Application = new PIXI.Application({
@@ -46,8 +49,13 @@ function startGame() {
     socket.emit('startGame', parseInt(inputField.value));
 }
 
-socket.on('message', (msg)=>{
+socket.on('message', (msg:string)=>{
     console.log(msg);
+    if (msg.substr(0, 6) === 'Socket') {
+        startButton.disabled = false;
+    }
+    msgDiv.innerHTML += msg;
+    msgDiv.innerHTML += '<br>';
 });
 
 socket.on('startGame', (gameID: number, player: Player)=>{
@@ -57,6 +65,7 @@ socket.on('startGame', (gameID: number, player: Player)=>{
     joinButton.remove();
     startButton.remove();
     inputField.remove();
+    msgDiv.remove();
 
     renderer.setPlayer(player);
     if (player==Player.Two) {
@@ -90,6 +99,20 @@ socket.on('destroyUnit', (id: number)=>{
 
 socket.on('applyDamage', (id: number)=>{
     renderer.applyDamage(id);
+});
+
+socket.on('gameWon', (player: Player)=>{
+    const div = document.createElement('div');
+    div.className += 'overlay';
+    if (renderer.player === player) {
+        console.log('You won!');
+        div.innerHTML = 'You won!';
+    } else {
+        console.log('You lose!');
+        div.innerHTML = 'You lose!';
+    }
+    document.body.appendChild(div);
+    socket.emit('gameWon');
 });
 
 

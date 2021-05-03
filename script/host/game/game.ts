@@ -95,6 +95,14 @@ export class Game {
     }
 
     public destroyUnit(unit: Movable): void {
+        if (unit.type === UnitTypes.Commander) {
+            if (unit.player === Player.One) {
+                this.server.to(this.gameID).emit('gameWon', Player.Two);
+            } else {
+                this.server.to(this.gameID).emit('gameWon', Player.One);
+            }
+        }
+
         let unitList: Movable[] = [];
         if (unit.player === Player.One) {
             unitList = this.playerOneUnits;

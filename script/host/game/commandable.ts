@@ -1,6 +1,7 @@
 import {Movable} from './movable.js';
 import {Player} from './player.js';
 import {angleToAnother, fmod} from '../../utils.js';
+import {UnitTypes} from './units/unitTypes.js';
 
 export class Commandable extends Movable {
     hasTarget: boolean = false;
@@ -16,8 +17,8 @@ export class Commandable extends Movable {
 
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
         unitSize:number, weight: number, hp: number, attack: number, player: Player,
-        attackCooldown: number) {
-        super(turningSpeed, maxSpeed, accel, decel, unitSize, weight, hp, attack, player, attackCooldown);
+        attackCooldown: number, type: UnitTypes) {
+        super(turningSpeed, maxSpeed, accel, decel, unitSize, weight, hp, attack, player, attackCooldown, type);
         this.safeDistance = this.maxSpeed**2 / 2 / this.decel;
     }
 

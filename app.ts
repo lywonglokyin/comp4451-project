@@ -11,6 +11,7 @@ import {Player} from './script/host/game/player.js';
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+let gameLoopInterval: ReturnType<typeof setInterval>|null = null;
 
 app.use('/js-script', express.static('js-script'));
 app.use('/images', express.static('images'));
@@ -40,6 +41,7 @@ io.sockets.on('connection', (socket)=>{
         const gameID: number = data.gameID;
         console.log('Create game with id', gameID);
         socket.join(gameID.toString());
+        io.to(gameID.toString()).emit('message', 'Created room ' + gameID + '.\n');
     });
 
     socket.on('joinRoom', (data)=>{
@@ -47,11 +49,11 @@ io.sockets.on('connection', (socket)=>{
         if (io.of('/').adapter.rooms.get(gameID.toString())) {
             // Room exists
             socket.join(gameID.toString());
-            io.to(gameID.toString()).emit('message', 'Socket ' + socket.id + ' joined!');
+            io.to(gameID.toString()).emit('message', 'Socket ' + socket.id + ' joined room ' + gameID + '!\n');
         } else {
             // Room not exist
             console.log('Room not exist!');
-            socket.emit('message', 'Room not exist!');
+            socket.emit('message', 'Room not exist!\n');
         }
     });
 
@@ -62,27 +64,27 @@ io.sockets.on('connection', (socket)=>{
         io.to(clientsArray[1]).emit('startGame', gameID, Player.Two);
         const game = new Game(3000, 6000, io, gameID);
         globalGame = game;
-        const commander = game.addUnit(1500, 3700, UnitTypes.Commander);
-        const enemyCommander = game.addUnit(1500, 2300, UnitTypes.Commander, Player.Two);
+        const commander = game.addUnit(1500, 3400, UnitTypes.Commander);
+        const enemyCommander = game.addUnit(1500, 2600, UnitTypes.Commander, Player.Two);
         for (let x=800; x<=2400; x+=100) {
-            game.addUnit(x, 3500, UnitTypes.Infantry);
+            game.addUnit(x, 3200, UnitTypes.Infantry);
         }
         for (let x=800; x<=1200; x+=100) {
-            game.addUnit(x, 3700, UnitTypes.Cavalry);
+            game.addUnit(x, 3400, UnitTypes.Cavalry);
         }
         for (let x=2000; x<=2400; x+=100) {
-            game.addUnit(x, 3700, UnitTypes.Cavalry);
+            game.addUnit(x, 3400, UnitTypes.Cavalry);
         }
         for (let x=800; x<=2400; x+=100) {
-            game.addUnit(x, 2500, UnitTypes.Infantry, Player.Two);
+            game.addUnit(x, 2800, UnitTypes.Infantry, Player.Two);
         }
         for (let x=800; x<=1200; x+=100) {
-            game.addUnit(x, 2300, UnitTypes.Cavalry, Player.Two);
+            game.addUnit(x, 2600, UnitTypes.Cavalry, Player.Two);
         }
         for (let x=2000; x<=2400; x+=100) {
-            game.addUnit(x, 2300, UnitTypes.Cavalry, Player.Two);
+            game.addUnit(x, 2600, UnitTypes.Cavalry, Player.Two);
         }
-        setInterval(game.gameLoop, 1000/60);
+        gameLoopInterval = setInterval(game.gameLoop, 1000/60);
     });
 
     socket.on('updateTargetPos', (id, targetX, targetY, targetDirection)=>{
@@ -112,6 +114,13 @@ io.sockets.on('connection', (socket)=>{
     socket.on('turnRight', (id)=>{
         if (globalGame !== null) {
             globalGame.everyUnits[id].turnRight();
+        }
+    });
+
+    socket.on('gameWon', ()=>{
+        if (gameLoopInterval !== null) {
+            clearInterval(gameLoopInterval);
+            gameLoopInterval = null;
         }
     });
 });

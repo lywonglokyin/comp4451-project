@@ -1,5 +1,6 @@
 import {Commandable} from '../commandable.js';
 import {Player} from '../player.js';
+import {UnitTypes} from './unitTypes.js';
 
 export class Cavalry extends Commandable {
     static turningSpeed: number = 0.02;
@@ -14,10 +15,11 @@ export class Cavalry extends Commandable {
             Cavalry.decel,
             78, // Unit size
             10, // Unit weight
-            500, // Unit hp
-            10, // Unit attack
+            100, // Unit hp
+            30, // Unit attack
             player,
             5*60, // Attack cooldown 5 sec
+            UnitTypes.Cavalry,
         );
         this.x = x;
         this.y = y;

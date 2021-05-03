@@ -22,7 +22,7 @@ export class Renderer {
 
     private everyUnits: {[key: number]:CommandableSprite} = {};
 
-    private cameraFocus: Sprite|null = null;
+    private cameraFocus: MovableSprite|null = null;
 
 
     private dragRectange: Graphics|null = null;
@@ -230,7 +230,11 @@ export class Renderer {
 
     public drawDragRectangle(fromX: number, fromY: number, toX: number, toY: number) {
         const localClickFrom: Point = new PIXI.Point(fromX, fromY);
+
+
         const localFrom: Point = this.gameContainer.toLocal(localClickFrom);
+
+
         const localClickTo: Point = new PIXI.Point(toX, toY);
         const localTo: Point = this.gameContainer.toLocal(localClickTo);
         const leftX = Math.min(localFrom.x, localTo.x);
@@ -289,7 +293,7 @@ export class Renderer {
         this.gameContainer.position.y = app.renderer.height/2;
     }
 
-    public fixCamera(sprite: Sprite) {
+    public fixCamera(sprite: MovableSprite) {
         this.cameraFocus = sprite;
     }
 
@@ -329,6 +333,9 @@ export class Renderer {
     }
 
     public destroyUnit(id: number) {
+        if (this.cameraFocus!== null &&this.cameraFocus.id === id) {
+            this.cameraFocus = null;
+        }
         this.everyUnits[id].destroy();
         delete this.everyUnits[id];
         const randomAudio = this.deadAudios[Math.floor(Math.random() * this.deadAudios.length)];

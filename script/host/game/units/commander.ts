@@ -1,5 +1,6 @@
 import {Commandable} from '../commandable.js';
 import {Player} from '../player.js';
+import {UnitTypes} from './unitTypes.js';
 
 
 export class Commander extends Commandable {
@@ -15,10 +16,11 @@ export class Commander extends Commandable {
             Commander.decel,
             78, // Unit size
             12, // Unit weight
-            600, // Unit hp
-            10, // Unit attack
+            100, // Unit hp
+            30, // Unit attack
             player,
             5*60, // Attack cooldown 5 sec
+            UnitTypes.Commander,
         );
         this.x = x;
         this.y = y;

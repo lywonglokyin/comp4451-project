@@ -8,7 +8,8 @@
     <style>
         * {
             padding: 0;
-            margin: 0
+            margin: 0;
+            font-size: x-large;
         }
     </style>
 </head>
@@ -19,11 +20,29 @@
     integrity="sha384-LzhRnpGmQP+lOvWruF/lgkcqD+WDVt9fU3H4BWmwP5u5LTmkUGafMcpZKNObVMLU"
     crossorigin="anonymous"></script>
 
+<style>
+    .overlay {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        background-color: rgba(0, 0, 0, 0.6);
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        text-align: center;
+        padding: 300px 0;
+        font-size: 150px;
+    }
+</style>
+
+
 <body>
     <script type="module" src="./js-script/script/host/setup.js"></script>
-
-    <button id="host"> Host</button>
-    <input id="inputGameID">
-    <button id="join"> Join</button>
-    <button id="start"> Start</button>
+    <div>
+        <button id="host"> Host</button>
+        <input id="inputGameID">
+        <button id="join"> Join</button>
+        <button id="start"> Start</button>
+    </div>
+    <div id="msg"></div>
 </body>

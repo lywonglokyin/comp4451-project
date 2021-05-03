@@ -1,4 +1,5 @@
 import {Player} from './player';
+import {UnitTypes} from './units/unitTypes';
 
 
 export class Movable {
@@ -14,7 +15,9 @@ export class Movable {
     accel: number;
     decel: number;
 
-    weight: number; // Weight of the unit, affect the movement after collision.
+    weight: number; // Weight of the unit, affects collision.
+
+
     private needShift: boolean = false; // If true, the unit would be shifted due to being attacked.
     private static readonly SHIFT_COUNTER_MAX = 60; // Countdown from the shift animation. Default to be 60 ticks (1sec)
     private shiftCounter: number = Movable.SHIFT_COUNTER_MAX; // A countdown for the shift animation.
@@ -30,12 +33,13 @@ export class Movable {
     hostileDirection: number = 0;
 
     player: Player;
+    type: UnitTypes;
 
     unitSize: number; // For now, it is assumed diameter of circle, this is used for collsion detection only
 
     constructor(turningSpeed: number, maxSpeed: number, accel: number, decel: number,
         unitSize: number, weight: number, hp: number, attack: number, player: Player,
-        attackCooldown: number) {
+        attackCooldown: number, type: UnitTypes) {
         this.id = Math.random()*1000000000|0;
 
         this.turningSpeed = turningSpeed;
@@ -50,6 +54,7 @@ export class Movable {
         this.MAX_ATTACK_COOLDOWN = attackCooldown;
 
         this.player = player;
+        this.type = type;
     }
 
     public turnLeft: ()=>void = ()=>{
